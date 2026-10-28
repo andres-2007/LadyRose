@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}Finalizar compra{% endblock %}
+{% block contenido %}
+<div class="contenedor">
+  <header class="cabecera-pagina">
+    <p class="migas"><a href="{% url 'pedidos:carrito' %}">Carrito</a> &nbsp;/&nbsp; Datos y pago</p>
+    <h1>Finalizar compra</h1>
+  </header>
+
+  <div class="pago">
+    <form class="formulario" method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+      {% if form.errors %}
+        <div class="errores-generales" role="alert">Revisa los campos marcados en rojo. Sin esos datos no podemos despachar tu pedido.</div>
+      {% endif %}
+      {% if form.non_field_errors %}<div class="errores-generales">{{ form.non_field_errors }}</div>{% endif %}
+
+      {# ---- 1. Datos de quien compra (HU 24) ---- #}
+      <section class="bloque-form">
+        <h2><span class="bloque-form__numero">1</span>Tus datos</h2>
+        <div class="campos dos-columnas">
+          {% include "partials/campo.html" with campo=form.nombre clase="ancho" %}
+          {% include "partials/campo.html" with campo=form.telefono %}
+          {% include "partials/campo.html" with campo=form.correo %}
+          <label class="casilla ancho">{{ form.whatsapp_igual }} <span>Mi WhatsApp es el mismo número de llamadas</span></label>
+          <div class="ancho" data-mostrar-si="whatsapp_igual=no">
+            {% include "partials/campo.html" with campo=form.whatsapp %}
+          </div>
+        </div>
+      </section>
+
+      {# ---- 2. Entrega (HU 24 y HU 11) ---- #}
+      <section class="bloque-form">
+        <h2><span class="bloque-form__numero">2</span>¿A dónde lo enviamos?</h2>
+        <div class="campos dos-columnas">
+          {% include "partials/campo.html" with campo=form.direccion clase="ancho" %}
+          {% include "partials/campo.html" with campo=form.barrio %}
+          {% include "partials/campo.html" with campo=form.ciudad %}
+          {% include "partials/campo.html" with campo=form.indicaciones clase="ancho" %}
+          <label class="casilla casilla--destacada ancho">{{ form.enviar_a_otra_persona }}
+            <span><strong>Es un regalo: enviarlo a otra persona</strong><br><span class="texto-suave">Lo llevamos directo a quien lo va a recibir.</span></span>
+          </label>
+          <div class="ancho dos-columnas" data-mostrar-si="enviar_a_otra_persona=on">
+            {% include "partials/campo.html" with campo=form.nombre_recibe %}
+            {% include "partials/campo.html" with campo=form.telefono_recibe %}
+          </div>
+        </div>
+      </section>
+
+      {# ---- 3. Empaque y nota (HU 11) ---- #}
+      <section class="bloque-form">
+        <h2><span class="bloque-form__numero">3</span>Empaque y nota</h2>
+        <p>Elige cómo quieres que llegue y, si quieres, escribe un mensaje. Lo ponemos en una tarjeta.</p>
+        <div class="campos">
+          <div class="radios" role="radiogroup" aria-label="Empaque">
+            <label class="radio-tarjeta">
+              <input type="radio" name="empaque" value="" data-costo="0" {% if not form.empaque.value %}checked{% endif %}>
+              <div><strong>Empaque normal</strong><span>Bolsita de tela de Ladyrose</span></div>
+              <span class="precio-extra">Sin costo</span>
+            </label>
+            {% for e in empaques %}
+            <label class="radio-tarjeta">
+              <input type="radio" name="empaque" value="{{ e.pk }}" data-costo="{{ e.costo|floatformat:0 }}" {% if form.empaque.value|stringformat:"s" == e.pk|stringformat:"s" %}checked{% endif %}>
+              <div><strong>{{ e.nombre }}</strong>{% if e.descripcion %}<span>{{ e.descripcion }}</span>{% endif %}</div>
+              <span class="precio-extra">{% if e.costo %}+ {{ e.costo|pesos }}{% else %}Sin costo{% endif %}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% include "partials/campo.html" with campo=form.nota %}
+          {% include "partials/campo.html" with campo=form.motivo %}
+        </div>
+      </section>
+
+      {# ---- 4. Pago (HU 24) ---- #}
+      <section class="bloque-form">
+        <h2><span class="bloque-form__numero">4</span>Forma de pago</h2>
+        <div class="campos">
+          <div class="campo {% if form.metodo_pago.errors %}campo--error{% endif %}">
+            <div class="radios">
+              <label class="radio-tarjeta">
+                <input type="radio" name="metodo_pago" value="contra_entrega" {% if form.metodo_pago.value == "contra_entrega" %}checked{% endif %}>
+                <div><strong>Pago contra entrega</strong><span>Pagas en efectivo cuando recibes el pedido.</span></div>
+              </label>
+              <label class="radio-tarjeta">
+                <input type="radio" name="metodo_pago" value="transferencia" {% if form.metodo_pago.value == "transferencia" %}checked{% endif %}>
+                <div><strong>Transferencia antes del envío</strong><span>Nequi o transferencia bancaria. Adjuntas el comprobante aquí mismo.</span></div>
+              </label>
+            </div>
+            {% if form.metodo_pago.errors %}<ul class="errores">{% for e in form.metodo_pago.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+          <div data-mostrar-si="metodo_pago=transferencia">
+            <div class="aviso aviso--neutro">{{ datos_transferencia }}</div>
+            {% include "partials/campo.html" with campo=form.comprobante %}
+            <span class="campo__ayuda">JPG, PNG o PDF de máximo 5 MB.</span>
+          </div>
+        </div>
+      </section>
+
+      <button class="boton boton--rosa boton--bloque" type="submit">Confirmar pedido</button>
+      <p class="campo__ayuda centrado">Al confirmar te mostramos el número de tu pedido. Te escribimos por WhatsApp para coordinar el envío.</p>
+    </form>
+
+    <aside class="resumen pago__resumen">
+      <h2>Tu pedido</h2>
+      {% for i in items %}
+        <div class="resumen__item">
+          {% with foto=i.producto.foto_principal %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="">{% else %}<span></span>{% endif %}{% endwith %}
+          <div>{{ i.producto.nombre }}{% if i.cantidad > 1 %} × {{ i.cantidad }}{% endif %}
+            <small>{% if i.talla %}Talla {{ i.talla.nombre }}{% endif %}{% if i.color %}{% if i.talla %} · {% endif %}{{ i.color }}{% endif %}</small>
+          </div>
+          <span>{{ i.subtotal|pesos }}</span>
+        </div>
+      {% endfor %}
+      <div class="resumen__fila" style="border-top:1px solid var(--linea);margin-top:8px;padding-top:14px"><span>Subtotal</span><span>{{ subtotal|pesos }}</span></div>
+      <div class="resumen__fila oculto" data-fila-empaque><span>Empaque de regalo</span><span></span></div>
+      <div class="resumen__fila"><span>Envío</span><span class="texto-suave">Se acuerda al despachar</span></div>
+      <div class="resumen__fila resumen__fila--total"><span>Total</span><span data-total data-subtotal="{{ subtotal|floatformat:0 }}">{{ subtotal|pesos }}</span></div>
+    </aside>
+  </div>
+</div>
+{% endblock %}

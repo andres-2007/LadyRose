@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block titulo %}{% if inspirada %}Una pieza inspirada en {{ producto.nombre }}{% elif producto %}Personalizar {{ producto.nombre }}{% else %}Pieza hecha a tu medida{% endif %}{% endblock %}
+{% block contenido %}
+<div class="contenedor contenedor--angosto" style="padding-bottom:64px">
+  <header class="cabecera-pagina">
+    {% if inspirada %}
+      <span class="antetitulo">Galería de piezas vendidas</span>
+      <h1>Quiero una inspirada en esta</h1>
+      <p>Cuéntanos qué te gustó de la pieza. La haremos en el mismo estilo según los insumos que haya hoy en el mercado.</p>
+    {% elif producto %}
+      <span class="antetitulo">Personaliza tu pieza</span>
+      <h1>Quiero personalizarlo</h1>
+      <p>Cuéntanos qué te gustaría cambiar. Te respondemos con la cotización en menos de {{ LADYROSE.TIEMPO_RESPUESTA }}.</p>
+    {% else %}
+      <span class="antetitulo">Hecho a tu medida</span>
+      <h1>Cuéntanos tu idea</h1>
+      <p>Descríbenos la pieza que sueñas y, si quieres, para quién es o qué historia la inspira. Te enviamos la cotización en menos de {{ LADYROSE.TIEMPO_RESPUESTA }}.</p>
+    {% endif %}
+  </header>
+
+  <form method="post" enctype="multipart/form-data" class="formulario" novalidate>
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<div class="errores-generales">{{ e }}</div>{% endfor %}
+
+    {% if producto %}
+      {# HU 34: el formulario ya trae la referencia y la foto del producto #}
+      <div class="bloque-form" style="display:grid;grid-template-columns:96px 1fr;gap:16px;align-items:center">
+        {% with foto=producto.foto_principal %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ producto.nombre }}" style="border-radius:4px;aspect-ratio:4/5;object-fit:cover">{% endif %}{% endwith %}
+        <div><span class="tarjeta__categoria">Referencia</span><h3 style="margin:4px 0 0">{{ producto.nombre }}</h3></div>
+      </div>
+    {% endif %}
+
+    <section class="bloque-form">
+      <h2>Tus datos</h2>
+      <div class="campos dos-columnas">
+        {% include "partials/campo.html" with campo=form.nombre clase="ancho" %}
+        {% include "partials/campo.html" with campo=form.whatsapp %}
+        {% include "partials/campo.html" with campo=form.correo %}
+      </div>
+    </section>
+
+    <section class="bloque-form">
+      <h2>{% if producto and not inspirada %}¿Qué le cambiamos?{% else %}Tu pieza{% endif %}</h2>
+      <div class="campos {% if producto and not inspirada %}dos-columnas{% endif %}">
+        {% if form.descripcion %}{% include "partials/campo.html" with campo=form.descripcion %}{% endif %}
+        {% if form.cambio_color %}
+          {% include "partials/campo.html" with campo=form.cambio_color %}
+          {% include "partials/campo.html" with campo=form.cambio_talla %}
+          {% include "partials/campo.html" with campo=form.cambio_material %}
+          {% include "partials/campo.html" with campo=form.cambio_otro clase="ancho" %}
+        {% endif %}
+        {# HU 09: historia o motivo (opcional) #}
+        {% include "partials/campo.html" with campo=form.motivo clase="ancho" %}
+        {% include "partials/campo.html" with campo=form.imagenes clase="ancho" %}
+      </div>
+    </section>
+
+    {# HU 20: casilla obligatoria del aviso de pieza única #}
+    <div class="campo {% if form.acepta_pieza_unica.errors %}campo--error{% endif %}">
+      <label class="casilla casilla--destacada">{{ form.acepta_pieza_unica }} <span>{{ form.acepta_pieza_unica.label }}</span></label>
+      {% if form.acepta_pieza_unica.errors %}<ul class="errores">{% for e in form.acepta_pieza_unica.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    <button class="boton boton--rosa boton--bloque" type="submit">Enviar solicitud</button>
+  </form>
+</div>
+{% endblock %}

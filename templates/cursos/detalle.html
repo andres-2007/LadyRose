@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}{{ curso.nombre }}{% endblock %}
+{% block og_titulo %}{{ curso.nombre }} · Curso Ladyrose{% endblock %}
+{% block og_descripcion %}{{ curso.tecnica }} · {{ curso.get_modalidad_display }} · {{ curso.fecha|date:"j \d\e F"|lower }}{% endblock %}
+{% block og_imagen %}{% with foto=curso.fotos.first %}{% if foto %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ foto.imagen.url }}">{% endif %}{% endwith %}{% endblock %}
+
+{% block contenido %}
+<div class="contenedor">
+  <article class="ficha">
+    {# HU 13: galería con fotos del accesorio que se aprende a hacer #}
+    <div class="ficha__galeria">
+      <div class="ficha__principal">
+        {% with foto=curso.fotos.first %}{% if foto %}<img data-foto-principal src="{{ foto.imagen.url }}" alt="{{ curso.nombre }}">{% endif %}{% endwith %}
+        {% if curso.agotado %}<div class="etiquetas"><span class="etiqueta etiqueta--agotado">Agotado</span></div>{% endif %}
+      </div>
+      {% if curso.fotos.all|length > 1 %}
+      <div class="ficha__miniaturas">
+        {% for foto in curso.fotos.all %}
+          <button type="button" class="{% if forloop.first %}activa{% endif %}" data-miniatura="{{ foto.imagen.url }}" aria-label="Ver foto {{ forloop.counter }}"><img src="{{ foto.imagen.url }}" alt="" loading="lazy"></button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="ficha__info">
+      <p class="migas"><a href="{% url 'cursos:lista' %}">Cursos</a></p>
+      <h1>{{ curso.nombre }}</h1>
+      <p class="precio">{{ curso.precio|pesos }} <span class="campo__ayuda">precio total, con materiales</span></p>
+      {% if curso.descripcion %}<p class="ficha__descripcion">{{ curso.descripcion|linebreaksbr }}</p>{% endif %}
+
+      {# HU 13: datos obligatorios del curso #}
+      <dl class="datos-curso">
+        <div><dt>Técnica</dt><dd>{{ curso.tecnica }}</dd></div>
+        <div><dt>Modalidad</dt><dd>{{ curso.get_modalidad_display }}</dd></div>
+        <div><dt>Tipo de curso</dt><dd>{{ curso.get_tipo_clase_display }}</dd></div>
+        <div><dt>Fecha</dt><dd>{{ curso.fecha|date:"l j \d\e F \d\e Y"|lower|capfirst }}</dd></div>
+        <div><dt>Horario</dt><dd>{{ curso.horario }}</dd></div>
+        {# HU 21: cupos disponibles #}
+        <div><dt>Cupos disponibles</dt><dd>{% if curso.agotado %}Agotado{% else %}{{ curso.cupos_disponibles }} de {{ curso.cupos_maximos }}{% endif %}</dd></div>
+        <div class="ancho"><dt>Materiales incluidos</dt><dd>{{ curso.materiales_incluidos|linebreaksbr }}</dd></div>
+      </dl>
+
+      <section class="bloque-form" id="inscripcion">
+        <h2>Inscripción</h2>
+        {% if curso.agotado %}
+          <p>Este curso ya no tiene cupos. Escríbenos y te avisamos cuando abramos otra fecha.</p>
+          <button class="boton boton--bloque" type="button" disabled>Agotado</button>
+        {% else %}
+          <p>Apartas tu cupo cuando confirmamos el pago. Te escribimos por WhatsApp con los datos.</p>
+          {# HU 26 CA 1: nombre, WhatsApp, correo, curso y modalidad #}
+          <form method="post" class="formulario" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="errores-generales">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="campos" style="margin-top:4px">
+              {% include "partials/campo.html" with campo=form.nombre %}
+              {% include "partials/campo.html" with campo=form.whatsapp %}
+              {% include "partials/campo.html" with campo=form.correo %}
+              {% include "partials/campo.html" with campo=form.curso %}
+              {% include "partials/campo.html" with campo=form.modalidad %}
+            </div>
+            <button class="boton boton--rosa boton--bloque" type="submit">Inscribirme</button>
+          </form>
+        {% endif %}
+      </section>
+
+      {% with objeto=curso %}{% include "partials/compartir.html" %}{% endwith %}
+    </div>
+  </article>
+</div>
+{% endblock %}

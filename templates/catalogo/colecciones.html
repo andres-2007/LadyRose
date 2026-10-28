@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block titulo %}Colecciones{% endblock %}
+{% block contenido %}
+<div class="contenedor" style="padding-bottom:64px">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Temporada</span>
+    <h1>Colecciones</h1>
+    <p>Piezas agrupadas por tema, por temporada y por los insumos que están de moda.</p>
+  </header>
+  {% if colecciones %}
+    <div class="colecciones">
+      {% for c in colecciones %}
+      <a class="coleccion" href="{{ c.get_absolute_url }}">
+        {% if c.portada %}<img src="{{ c.portada.url }}" alt="" loading="lazy">{% endif %}
+        <div class="coleccion__texto">
+          <h3>{{ c.nombre }}</h3>
+          <span>{{ c.productos.count }} pieza{{ c.productos.count|pluralize }}</span>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="vacio"><h2>Pronto vas a ver nuestras colecciones</h2></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block titulo %}Galería de piezas vendidas{% endblock %}
+{% block contenido %}
+<div class="contenedor" style="padding-bottom:64px">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Inspiración</span>
+    <h1>Galería de piezas vendidas</h1>
+    <p>Trabajos que ya tienen dueña. Si alguno te enamora, te hacemos uno inspirado en él.</p>
+  </header>
+  <div class="aviso aviso--neutro galeria-aviso">{{ aviso_galeria }}</div>
+  {% if piezas %}
+    <div class="rejilla">{% for producto in piezas %}{% include "catalogo/_tarjeta.html" %}{% endfor %}</div>
+  {% else %}
+    <div class="vacio"><h2>Todavía no hay piezas en la galería</h2></div>
+  {% endif %}
+</div>
+{% endblock %}

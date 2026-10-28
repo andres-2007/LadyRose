@@ -1,0 +1,154 @@
+{% extends "pedidos/panel/base_panel.html" %}
+{% load ladyrose %}
+{% block titulo %}Pedido {{ pedido.numero }}{% endblock %}
+{% block contenido %}
+<div class="contenedor">
+  <div class="panel-titulo">
+    <div>
+      <p class="migas"><a href="{% url 'pedidos:panel' %}">Pedidos</a> &nbsp;/&nbsp; {{ pedido.numero }}</p>
+      <h1>{{ pedido.nombre_accesorio }}</h1>
+      <p>Pedido de {{ pedido.nombre }} · {{ pedido.creado|date:"j \d\e F, g:i a"|lower }}</p>
+    </div>
+    <span class="insignia insignia--{{ pedido.estado_produccion }}" data-insignia style="font-size:.85rem;padding:8px 14px">{{ pedido.get_estado_produccion_display }}</span>
+  </div>
+
+  <div class="detalle-pedido">
+    <div style="display:grid;gap:18px">
+      {# HU 03 CA 2: el empaque de regalo y la nota se resaltan #}
+      {% if pedido.tiene_regalo %}
+      <section class="tarjeta-panel tarjeta-panel--regalo">
+        <h2>Este pedido es un regalo</h2>
+        {% if pedido.empaque %}<p><strong>Empaque:</strong> {{ pedido.empaque.nombre }}{% if pedido.empaque.descripcion %} · {{ pedido.empaque.descripcion }}{% endif %}</p>{% endif %}
+        {% if pedido.nota %}<p style="margin:0"><strong>Nota escrita para la tarjeta:</strong></p><div class="nota-regalo">"{{ pedido.nota }}"</div>{% endif %}
+        {% if pedido.enviar_a_otra_persona %}<p style="margin:12px 0 0">Se envía directo a <strong>{{ pedido.nombre_recibe }}</strong>.</p>{% endif %}
+      </section>
+      {% endif %}
+
+      {# HU 03 CA 3: historia o motivo que escribió el cliente #}
+      {% if pedido.motivo %}
+      <section class="tarjeta-panel">
+        <h2>Para quién es</h2>
+        <div class="historia-cliente">{{ pedido.motivo }}</div>
+      </section>
+      {% endif %}
+
+      {# HU 03 CA 4: colores, materiales y talla #}
+      <section class="tarjeta-panel">
+        <h2>Qué hay que hacer</h2>
+        {% if pedido.detalles.all %}
+        <div style="overflow-x:auto">
+          <table class="tabla">
+            <thead><tr><th>Pieza</th><th>Talla</th><th>Color</th><th>Material</th><th>Cant.</th></tr></thead>
+            <tbody>
+              {% for d in pedido.detalles.all %}
+              <tr>
+                <td><strong>{{ d.referencia }}</strong></td>
+                <td>{{ d.talla|default:"-" }}</td>
+                <td>{{ d.color|default:"-" }}</td>
+                <td>{{ d.material|default:"-" }}</td>
+                <td>{{ d.cantidad }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% endif %}
+        {% with c=pedido.cotizacion %}{% if c %}
+          <dl class="lista-datos" style="margin-top:14px">
+            {% if c.descripcion %}<div><dt>Lo que pidió</dt><dd>{{ c.descripcion|linebreaksbr }}</dd></div>{% endif %}
+            {% if c.producto %}<div><dt>Basado en</dt><dd>{{ c.producto.nombre }}</dd></div>{% endif %}
+            {% if c.cambio_color %}<div><dt>Color</dt><dd>{{ c.cambio_color }}</dd></div>{% endif %}
+            {% if c.cambio_talla %}<div><dt>Talla</dt><dd>{{ c.cambio_talla }}</dd></div>{% endif %}
+            {% if c.cambio_material %}<div><dt>Material</dt><dd>{{ c.cambio_material }}</dd></div>{% endif %}
+            {% if c.cambio_otro %}<div><dt>Otro cambio</dt><dd>{{ c.cambio_otro }}</dd></div>{% endif %}
+          </dl>
+        {% endif %}{% endwith %}
+      </section>
+
+      {# HU 03 CA 1: imágenes de referencia del cliente #}
+      <section class="tarjeta-panel">
+        <h2>Imágenes de referencia</h2>
+        <div class="galeria-ref">
+          {% if pedido.cotizacion %}{% for img in pedido.cotizacion.imagenes.all %}
+            <a href="{{ img.imagen.url }}" target="_blank"><img src="{{ img.imagen.url }}" alt="Referencia del cliente"></a>
+          {% endfor %}{% endif %}
+          {% for d in pedido.detalles.all %}{% if d.producto %}{% for f in d.producto.fotos.all %}
+            <a href="{{ f.imagen.url }}" target="_blank"><img src="{{ f.imagen.url }}" alt="{{ d.referencia }}"></a>
+          {% endfor %}{% endif %}{% endfor %}
+        </div>
+      </section>
+    </div>
+
+    <div style="display:grid;gap:18px">
+      <section class="tarjeta-panel">
+        <h2>Producción</h2>
+        <dl class="lista-datos">
+          <div><dt>Técnica</dt><dd>{{ pedido.tecnica|default:"Sin definir" }}</dd></div>
+          <div><dt>Fecha límite</dt><dd class="{% if pedido.dias_restantes is not None and pedido.dias_restantes <= 1 and pedido.pendiente_de_produccion %}urgente{% endif %}">{{ pedido.fecha_limite|date:"l j \d\e F"|lower }}</dd></div>
+          <div><dt>Elaboración</dt><dd>{{ pedido.dias_elaboracion }} día{{ pedido.dias_elaboracion|pluralize }} hábil{{ pedido.dias_elaboracion|pluralize:"es" }}</dd></div>
+        </dl>
+        {% if puede_cambiar and pedido.estado_produccion != "en_pausa" %}
+        <hr class="separador">
+        <form method="post" action="{% url 'pedidos:cambiar_estado' pedido.pk %}" data-estado-pedido class="estado-grande">
+          {% csrf_token %}
+          <input type="hidden" name="volver" value="{{ request.path }}">
+          <label for="estado">Estado</label>
+          <div class="pedido__estado" style="border:0;padding:0">
+            <select id="estado" name="estado">
+              {% for valor, texto in estados %}<option value="{{ valor }}" {% if pedido.estado_produccion == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+            </select>
+            <button class="boton boton--chico" type="submit">Guardar</button>
+            <span class="guardado" aria-live="polite"></span>
+          </div>
+        </form>
+        {% endif %}
+      </section>
+
+      {# HU 10: aviso al cliente por falta de insumos #}
+      {% if puede_cambiar %}
+      <section class="tarjeta-panel">
+        {% if pedido.estado_produccion == "en_pausa" %}
+          <h2>En pausa</h2>
+          <p>Le avisamos al cliente que falta un insumo y estamos esperando su respuesta.</p>
+          <form method="post" action="{% url 'pedidos:reanudar' pedido.pk %}">
+            {% csrf_token %}
+            <button class="boton boton--bloque" type="submit">Reanudar pedido</button>
+          </form>
+        {% else %}
+          <h2>¿Falta un insumo?</h2>
+          <p class="texto-suave" style="font-size:.9rem">Escríbele al cliente para ofrecerle una alternativa. El pedido queda en pausa hasta que responda.</p>
+          <form class="formulario" method="post" action="{% url 'pedidos:avisar' pedido.pk %}">
+            {% csrf_token %}
+            <div class="campo">
+              <label for="{{ form_aviso.mensaje.id_for_label }}">Mensaje</label>
+              {{ form_aviso.mensaje }}
+            </div>
+            <div class="acciones-pedido">
+              <button class="boton boton--bloque" type="submit" name="canal" value="whatsapp" formtarget="_blank" onclick="setTimeout(function(){location.reload()},1500)">Enviar por WhatsApp</button>
+              {% if pedido.correo %}
+                <button class="boton boton--borde boton--bloque" type="submit" name="canal" value="correo">Enviar por correo</button>
+              {% endif %}
+            </div>
+          </form>
+        {% endif %}
+      </section>
+      {% endif %}
+
+      <section class="tarjeta-panel">
+        <h2>Cliente y entrega</h2>
+        <dl class="lista-datos">
+          <div><dt>Cliente</dt><dd>{{ pedido.nombre }}</dd></div>
+          <div><dt>WhatsApp</dt><dd><a href="https://wa.me/{{ pedido.whatsapp_internacional }}" target="_blank" rel="noopener">{{ pedido.whatsapp|default:pedido.telefono }}</a></dd></div>
+          {% if pedido.correo %}<div><dt>Correo</dt><dd>{{ pedido.correo }}</dd></div>{% endif %}
+          <div><dt>Recibe</dt><dd>{{ pedido.nombre_recibe }} · {{ pedido.telefono_recibe }}</dd></div>
+          <div><dt>Dirección</dt><dd>{{ pedido.direccion }}, {{ pedido.barrio }}, {{ pedido.ciudad }}{% if pedido.indicaciones %}<br><span class="texto-suave">{{ pedido.indicaciones }}</span>{% endif %}</dd></div>
+          <div><dt>Envío</dt><dd>{{ pedido.get_estado_envio_display }}</dd></div>
+        </dl>
+        {% if perms.pedidos.delete_pedido %}
+          <p style="margin:14px 0 0"><a class="enlace-flecha" href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">Ver pago y envío en el panel</a></p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

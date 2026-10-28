@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}Pedido confirmado{% endblock %}
+{% block contenido %}
+<div class="contenedor contenedor--angosto confirmado">
+  <div class="confirmado__icono"><svg aria-hidden="true"><use href="#i-check"/></svg></div>
+  <span class="antetitulo">Pedido {{ pedido.numero }}</span>
+  <h1>¡Gracias, {{ pedido.nombre|primer_nombre }}!</h1>
+  <p class="texto-suave">Recibimos tu pedido y ya está en la lista de la diseñadora. Te escribimos por WhatsApp para coordinar el envío.
+    {% if pedido.metodo_pago == "transferencia" %}Primero revisamos el comprobante de tu transferencia.{% else %}Pagas cuando lo recibas.{% endif %}</p>
+
+  <div class="resumen">
+    <h2>Resumen</h2>
+    {% for d in pedido.detalles.all %}
+      <div class="resumen__fila"><span>{{ d.referencia }}{% if d.talla %} · {{ d.talla }}{% endif %}{% if d.color %} · {{ d.color }}{% endif %} × {{ d.cantidad }}</span><span>{{ d.subtotal|pesos }}</span></div>
+    {% endfor %}
+    {% if pedido.empaque %}<div class="resumen__fila"><span>{{ pedido.empaque.nombre }}</span><span>{{ pedido.costo_empaque|pesos }}</span></div>{% endif %}
+    <div class="resumen__fila resumen__fila--total"><span>Total</span><span>{{ pedido.total|pesos }}</span></div>
+    <hr class="separador">
+    <dl class="lista-datos">
+      <div><dt>Recibe</dt><dd>{{ pedido.nombre_recibe }} · {{ pedido.telefono_recibe }}</dd></div>
+      <div><dt>Dirección</dt><dd>{{ pedido.direccion }}, {{ pedido.barrio }}, {{ pedido.ciudad }}</dd></div>
+      <div><dt>Pago</dt><dd>{{ pedido.get_metodo_pago_display }}</dd></div>
+      {% if pedido.nota %}<div><dt>Nota</dt><dd><em>"{{ pedido.nota }}"</em></dd></div>{% endif %}
+      <div><dt>Lista para el</dt><dd>{{ pedido.fecha_limite|date:"l j \d\e F"|lower }}</dd></div>
+    </dl>
+  </div>
+  <p style="margin-top:28px"><a class="boton" href="{% url 'catalogo:lista' %}">Seguir viendo piezas</a></p>
+</div>
+{% endblock %}

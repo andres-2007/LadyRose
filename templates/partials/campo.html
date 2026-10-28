@@ -1,0 +1,7 @@
+{# Campo de formulario con su etiqueta, ayuda y error (HU 24 CA 4: marca el campo que falta) #}
+<div class="campo {% if campo.errors %}campo--error{% endif %} {{ clase }}" {% if id_bloque %}id="{{ id_bloque }}"{% endif %}>
+  <label for="{{ campo.id_for_label }}">{{ campo.label }}{% if campo.field.required %} *{% endif %}</label>
+  {{ campo }}
+  {% if campo.help_text %}<span class="campo__ayuda">{{ campo.help_text }}</span>{% endif %}
+  {% if campo.errors %}<ul class="errores">{% for e in campo.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+</div>

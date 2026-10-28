@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}Compras al por mayor{% endblock %}
+{% block contenido %}
+<div class="contenedor">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Para tu negocio</span>
+    <h1>Compras al por mayor</h1>
+    <p>Si tienes una tienda o un emprendimiento, surte tu vitrina con piezas hechas a mano y precios mayoristas.</p>
+  </header>
+  <div class="mayorista">
+    {# HU 25: monto mínimo vigente configurado por la dueña #}
+    <div class="monto">
+      <span>Monto mínimo de compra mayorista</span>
+      <strong>{{ monto_minimo|pesos }}</strong>
+      <span style="letter-spacing:0;text-transform:none;font-size:.9rem">Sin cantidad mínima por referencia</span>
+    </div>
+    <div>
+      <ul class="lista-check">
+        <li>Combina las referencias que quieras hasta completar el monto mínimo.</li>
+        <li>Precios especiales para revender.</li>
+        <li>Envíos a toda Colombia.</li>
+      </ul>
+      <a class="boton" style="margin-top:26px" target="_blank" rel="noopener"
+         href="{% whatsapp_tienda LADYROSE.WHATSAPP 'Hola, quiero información para compras al por mayor' %}">Escríbenos por WhatsApp</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

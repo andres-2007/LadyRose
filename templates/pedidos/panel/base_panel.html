@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block clase_cuerpo %}panel-cuerpo{% endblock %}
+{% block barra %}
+<header class="panel-barra">
+  <div class="contenedor panel-barra__fila">
+    <a href="{% url 'pedidos:panel' %}" class="marca">
+      <svg class="marca__simbolo" aria-hidden="true"><use href="#i-rosa"/></svg>
+      <span class="marca__nombre">Ladyrose</span>
+    </a>
+    <nav>
+      <a href="{% url 'pedidos:panel' %}" class="activo">Pedidos</a>
+      <a href="{% url 'admin:index' %}">Panel completo</a>
+      <a href="{% url 'core:inicio' %}" target="_blank">Ver la página</a>
+    </nav>
+  </div>
+</header>
+{% endblock %}
+{% block pie %}{% endblock %}

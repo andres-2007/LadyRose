@@ -1,0 +1,49 @@
+/* Panel de Ladyrose: el admin de Django con los colores de la marca */
+:root, html[data-theme], html[data-theme="dark"] {
+  --primary: #2b2320;
+  --secondary: #a14e5c;
+  --accent: #e4b9b9;
+  --primary-fg: #fbf7f2;
+  --body-fg: #2b2320;
+  --body-bg: #fbf7f2;
+  --body-quiet-color: #6e625b;
+  --body-loud-color: #2b2320;
+  --header-color: #e4b9b9;
+  --header-branding-color: #fbf7f2;
+  --header-bg: #2b2320;
+  --header-link-color: #fbf7f2;
+  --breadcrumbs-fg: #6e625b;
+  --breadcrumbs-link-fg: #2b2320;
+  --breadcrumbs-bg: #f4ece3;
+  --link-fg: #853c49;
+  --link-hover-color: #a14e5c;
+  --link-selected-fg: #a14e5c;
+  --hairline-color: #e5d9cc;
+  --border-color: #e5d9cc;
+  --darkened-bg: #f4ece3;
+  --selected-bg: #f3e1de;
+  --selected-row: #fbf0ee;
+  --button-fg: #fbf7f2;
+  --button-bg: #2b2320;
+  --button-hover-bg: #a14e5c;
+  --default-button-bg: #a14e5c;
+  --default-button-hover-bg: #853c49;
+  --close-button-bg: #6e625b;
+  --object-tools-bg: #2b2320;
+  --object-tools-hover-bg: #a14e5c;
+  --font-family-primary: "Jost", "Helvetica Neue", Arial, sans-serif;
+}
+#header { padding: 14px 32px; }
+#site-name a, #site-name a:link, #site-name a:visited { color: #fbf7f2; font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.9rem; font-weight: 500; letter-spacing: .03em; }
+#site-name span { font-family: "Jost", sans-serif; font-size: .7rem; letter-spacing: .25em; text-transform: uppercase; color: #e4b9b9; margin-left: 6px; }
+#user-tools { font-size: .72rem; letter-spacing: .1em; }
+h1, #content h1 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 2rem; }
+.module h2, .module caption, .inline-group h2 { background: #2b2320; letter-spacing: .12em; font-weight: 500; }
+.module { border-radius: 10px; overflow: hidden; }
+#content-main .module { box-shadow: 0 1px 0 #e5d9cc; }
+.lr-destacado { background: #f3e1de; border-left: 4px solid #a14e5c; padding: 12px 16px; font-size: 15px; white-space: pre-line; color: #2b2320; border-radius: 4px; max-width: 640px; }
+.lr-resumen { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 20px; }
+.lr-resumen div { background: #fff; border: 1px solid #e5d9cc; border-radius: 10px; padding: 12px 18px; min-width: 120px; }
+.lr-resumen strong { display: block; font-size: 1.6rem; font-family: "Cormorant Garamond", Georgia, serif; }
+.theme-toggle { display: none !important; }
+@media (prefers-color-scheme: dark) { :root { color-scheme: light; } }

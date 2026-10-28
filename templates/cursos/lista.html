@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block titulo %}Cursos y talleres{% endblock %}
+{% block contenido %}
+<div class="contenedor" style="padding-bottom:64px">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Aprende con nosotras</span>
+    <h1>Cursos y talleres</h1>
+    <p>Grupos pequeños, presenciales o virtuales. Todos los materiales van incluidos y te llevas la pieza que hagas.</p>
+  </header>
+  {% if cursos %}
+    <div class="rejilla rejilla--3">{% for curso in cursos %}{% include "cursos/_tarjeta.html" %}{% endfor %}</div>
+  {% else %}
+    <div class="vacio"><h2>Pronto publicaremos nuevos cursos</h2><p>Síguenos en Instagram para enterarte primero.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,28 @@
+{% load ladyrose %}
+<a class="curso-tarjeta" href="{{ curso.get_absolute_url }}">
+  <div class="curso-tarjeta__imagen">
+    {% with foto=curso.fotos.first %}
+      {% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ curso.nombre }}" loading="lazy">{% else %}<div class="tarjeta__sin-foto">Sin foto</div>{% endif %}
+    {% endwith %}
+    <div class="etiquetas">
+      <span class="etiqueta">{{ curso.get_modalidad_display }}</span>
+      {% if curso.agotado %}<span class="etiqueta etiqueta--agotado">Agotado</span>{% endif %}
+    </div>
+  </div>
+  <div class="curso-tarjeta__cuerpo">
+    <span class="tarjeta__categoria">{{ curso.tecnica }}</span>
+    <h3>{{ curso.nombre }}</h3>
+    <div class="curso-tarjeta__datos">
+      <span>{{ curso.fecha|date:"j \d\e F"|lower }}</span>
+      <span>{{ curso.horario }}</span>
+      <span>Clase {{ curso.get_tipo_clase_display|lower }}</span>
+    </div>
+    <div class="curso-tarjeta__pie">
+      <span class="precio">{{ curso.precio|pesos }}</span>
+      {% if curso.agotado %}<span class="cupos">Sin cupos</span>
+      {% elif curso.cupos_disponibles == 1 %}<span class="cupos cupos--pocos">Queda 1 cupo</span>
+      {% elif curso.cupos_disponibles <= 3 %}<span class="cupos cupos--pocos">Quedan {{ curso.cupos_disponibles }} cupos</span>
+      {% else %}<span class="cupos">{{ curso.cupos_disponibles }} cupos libres</span>{% endif %}
+    </div>
+  </div>
+</a>

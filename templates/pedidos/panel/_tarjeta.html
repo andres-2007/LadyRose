@@ -1,0 +1,39 @@
+{% load ladyrose %}
+{# HU 01 CA 1: número, foto o nombre del accesorio, técnica y fecha límite #}
+<article class="pedido" data-pedido>
+  <div class="pedido__foto">
+    {% if p.foto %}<img src="{{ p.foto.url }}" alt="" loading="lazy">{% else %}{{ p.nombre_accesorio|truncatechars:24 }}{% endif %}
+  </div>
+  <div>
+    <span class="pedido__numero">Pedido {{ p.numero }}</span>
+    <a class="pedido__nombre" href="{% url 'pedidos:panel_detalle' p.pk %}">{{ p.nombre_accesorio }}</a>
+    <div class="pedido__datos">
+      <span><svg aria-hidden="true"><use href="#i-pinza"/></svg>{{ p.tecnica|default:"Técnica sin definir" }}</span>
+      <span class="{% if p.dias_restantes is not None and p.dias_restantes <= 1 and p.pendiente_de_produccion %}urgente{% endif %}">
+        <svg aria-hidden="true"><use href="#i-calendario"/></svg>{{ p.fecha_limite|date:"D j M"|lower }}
+        {% if p.pendiente_de_produccion and p.dias_restantes is not None %}
+          {% if p.dias_restantes < 0 %}(atrasado){% elif p.dias_restantes == 0 %}(hoy){% elif p.dias_restantes == 1 %}(mañana){% endif %}
+        {% endif %}
+      </span>
+      {% if p.tiene_regalo %}<span class="insignia insignia--regalo">Regalo</span>{% endif %}
+    </div>
+  </div>
+  {# HU 04: selector de estado que guarda sin salir del panel #}
+  <div class="pedido__estado">
+    {% if puede_cambiar and p.estado_produccion != "en_pausa" %}
+      <form method="post" action="{% url 'pedidos:cambiar_estado' p.pk %}" data-estado-pedido style="display:flex;align-items:center;gap:10px">
+        {% csrf_token %}
+        <input type="hidden" name="volver" value="{{ request.get_full_path }}">
+        <label class="sr-only" for="estado-{{ p.pk }}">Estado del pedido {{ p.numero }}</label>
+        <select id="estado-{{ p.pk }}" name="estado">
+          {% for valor, texto in estados %}<option value="{{ valor }}" {% if p.estado_produccion == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+        </select>
+        <button class="boton boton--chico" type="submit">Guardar</button>
+        <span class="guardado" aria-live="polite"></span>
+      </form>
+    {% else %}
+      <span class="insignia insignia--{{ p.estado_produccion }}" data-insignia>{{ p.get_estado_produccion_display }}</span>
+      {% if p.estado_produccion == "en_pausa" %}<a class="enlace-flecha" style="position:relative;z-index:2" href="{% url 'pedidos:panel_detalle' p.pk %}">Reanudar</a>{% endif %}
+    {% endif %}
+  </div>
+</article>

@@ -1,0 +1,23 @@
+{% load ladyrose %}
+<a class="tarjeta" href="{{ producto.get_absolute_url }}">
+  <div class="tarjeta__imagen">
+    {% with foto=producto.foto_principal foto2=producto.foto_secundaria %}
+      {% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ producto.nombre }}" loading="lazy">{% else %}<div class="tarjeta__sin-foto">Sin foto</div>{% endif %}
+      {% if foto2 %}<img class="foto-2" src="{{ foto2.imagen.url }}" alt="" loading="lazy">{% endif %}
+    {% endwith %}
+    <div class="etiquetas">
+      {% if producto.en_galeria %}<span class="etiqueta etiqueta--tinta">Vendida</span>
+      {% elif producto.pieza_unica %}<span class="etiqueta">Pieza única</span>{% endif %}
+      {% if producto.en_oferta and not producto.vendida %}<span class="etiqueta etiqueta--rosa">Oferta</span>{% endif %}
+    </div>
+  </div>
+  <div class="tarjeta__cuerpo">
+    <span class="tarjeta__categoria">{{ producto.categoria }}</span>
+    <h3 class="tarjeta__nombre">{{ producto.nombre }}</h3>
+    {% if not producto.en_galeria %}
+    <p class="precio">
+      {% if producto.en_oferta %}<del>{{ producto.precio|pesos }}</del><ins>{{ producto.precio_oferta|pesos }}</ins>{% else %}{{ producto.precio|pesos }}{% endif %}
+    </p>
+    {% endif %}
+  </div>
+</a>

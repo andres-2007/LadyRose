@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block titulo %}{% if coleccion_actual %}{{ coleccion_actual.nombre }}{% elif categoria_actual %}{{ categoria_actual.nombre }}{% else %}Catálogo{% endif %}{% endblock %}
+
+{% block contenido %}
+<div class="contenedor">
+  {% if coleccion_actual %}
+    {# HU 16: catálogo filtrado por la colección elegida #}
+    <div class="banner-coleccion" style="margin-top:28px">
+      {% if coleccion_actual.portada %}<img src="{{ coleccion_actual.portada.url }}" alt="">{% endif %}
+      <div>
+        <p class="migas"><a href="{% url 'catalogo:colecciones' %}">Colecciones</a></p>
+        <h1>{{ coleccion_actual.nombre }}</h1>
+        {% if coleccion_actual.descripcion %}<p class="texto-suave">{{ coleccion_actual.descripcion }}</p>{% endif %}
+        <a class="enlace-flecha" href="{% url 'catalogo:lista' %}">Ver todo el catálogo</a>
+      </div>
+    </div>
+  {% else %}
+    <header class="cabecera-pagina">
+      <span class="antetitulo">Tienda</span>
+      <h1>{% if categoria_actual %}{{ categoria_actual.nombre }}{% else %}Catálogo{% endif %}</h1>
+      <p>Cada pieza está hecha a mano, así que puede variar un poco de la foto. Eso es lo que la hace tuya.</p>
+    </header>
+  {% endif %}
+
+  <div class="filtros">
+    <nav class="chips" aria-label="Categorías">
+      <a class="chip {% if not categoria_actual %}activo{% endif %}" href="?{% if coleccion_actual %}coleccion={{ coleccion_actual.slug }}{% endif %}">Todo</a>
+      {% for c in categorias %}
+        <a class="chip {% if categoria_actual == c %}activo{% endif %}" href="?categoria={{ c.slug }}{% if coleccion_actual %}&coleccion={{ coleccion_actual.slug }}{% endif %}">{{ c.nombre }}</a>
+      {% endfor %}
+    </nav>
+    <form class="filtros__fila" method="get">
+      {% if categoria_actual %}<input type="hidden" name="categoria" value="{{ categoria_actual.slug }}">{% endif %}
+      {% if coleccion_actual %}<input type="hidden" name="coleccion" value="{{ coleccion_actual.slug }}">{% endif %}
+      <span>{{ productos|length }} pieza{{ productos|length|pluralize }}</span>
+      <label class="selector-orden">Ordenar
+        <select name="orden" onchange="this.form.submit()">
+          {% for valor, texto in ordenes %}<option value="{{ valor }}" {% if orden == valor %}selected{% endif %}>{{ texto }}</option>{% endfor %}
+        </select>
+      </label>
+    </form>
+  </div>
+
+  {% if productos %}
+    <div class="rejilla" style="padding-bottom:64px">
+      {% for producto in productos %}{% include "catalogo/_tarjeta.html" %}{% endfor %}
+    </div>
+  {% else %}
+    <div class="vacio">
+      <h2>Aquí todavía no hay piezas</h2>
+      <p>Mira el resto del catálogo o pídenos una a tu medida.</p>
+      <a class="boton" href="{% url 'cotizaciones:cotizar' %}">Pedir una pieza</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

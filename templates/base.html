@@ -1,0 +1,130 @@
+{% load static ladyrose %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  {# HU 23: la página se adapta al ancho de celulares y tablets #}
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}Joyería artesanal hecha a mano{% endblock %} | Ladyrose</title>
+  <meta name="description" content="{% block descripcion %}Bisutería artesanal hecha a mano en Cali: piezas únicas, joyas personalizadas y cursos.{% endblock %}">
+  <meta name="theme-color" content="#2b2320">
+  {# HU 31: datos para que el enlace compartido muestre foto y nombre en redes #}
+  <meta property="og:site_name" content="Ladyrose">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="{% block og_titulo %}Ladyrose · Joyería artesanal{% endblock %}">
+  <meta property="og:description" content="{% block og_descripcion %}Bisutería artesanal hecha a mano en Cali.{% endblock %}">
+  <meta property="og:url" content="{{ request.build_absolute_uri }}">
+  {% block og_imagen %}{% endblock %}
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%232b2320'/%3E%3Ctext x='16' y='22' font-family='Georgia' font-size='17' fill='%23fbf7f2' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+  <link rel="preload" href="{% static 'fonts/cormorant-garamond-latin-500-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="{% static 'fonts/jost-latin-400-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
+  {% block cabeza %}{% endblock %}
+</head>
+<body class="{% block clase_cuerpo %}{% endblock %}">
+  {% include "partials/iconos.html" %}
+  <a class="sr-only" href="#contenido">Ir al contenido</a>
+  {% block barra %}
+  <div class="anuncio">Hecho a mano en Cali &nbsp;·&nbsp; Envíos a toda Colombia</div>
+  <header class="encabezado">
+    <div class="contenedor encabezado__fila">
+      <button class="menu-boton" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="menu-principal">
+        <span></span><span></span><span></span>
+      </button>
+      <a href="{% url 'core:inicio' %}" class="marca" aria-label="Ladyrose, inicio">
+        <svg class="marca__simbolo" aria-hidden="true"><use href="#i-rosa"/></svg>
+        <span class="marca__nombre">Ladyrose</span>
+      </a>
+      <a href="{% url 'pedidos:carrito' %}" class="icono-boton" style="justify-self:end" aria-label="Carrito, {{ CANTIDAD_CARRITO }} productos">
+        <svg aria-hidden="true"><use href="#i-bolsa"/></svg>
+        {% if CANTIDAD_CARRITO %}<span class="carrito-burbuja">{{ CANTIDAD_CARRITO }}</span>{% endif %}
+      </a>
+    </div>
+    <nav id="menu-principal" class="menu" aria-label="Menú principal">
+      <button class="menu__cerrar" type="button" data-cerrar-menu aria-label="Cerrar menú">&times;</button>
+      <a href="{% url 'catalogo:lista' %}" {% actual '/catalogo/' True %}>Catálogo</a>
+      {# HU 16: acceso a las colecciones desde el menú principal #}
+      <a href="{% url 'catalogo:colecciones' %}" {% actual '/catalogo/colecciones/' %}>Colecciones</a>
+      <a href="{% url 'cotizaciones:cotizar' %}" {% actual '/cotizar/' %}>Hecho a tu medida</a>
+      <a href="{% url 'cursos:lista' %}" {% actual '/cursos/' %}>Cursos</a>
+      {# HU 08 #}
+      <a href="{% url 'catalogo:galeria' %}" {% actual '/catalogo/galeria/' %}>Galería</a>
+      {# HU 18 #}
+      <a href="{% url 'core:historia' %}" {% actual '/nuestra-historia/' %}>Nuestra historia</a>
+      <a href="{% url 'core:mayorista' %}" {% actual '/al-por-mayor/' %}>Al por mayor</a>
+      <div class="menu__extra">
+        <a href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
+        <a href="{{ LADYROSE.INSTAGRAM }}" target="_blank" rel="noopener">Instagram</a>
+      </div>
+    </nav>
+    <div class="velo" data-velo></div>
+  </header>
+  {% endblock %}
+
+  {% if messages %}
+    <div class="mensajes" role="status">
+      {% for m in messages %}<div class="alerta alerta--{{ m.tags }}">{{ m }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  <main id="contenido">
+    {% block contenido %}{% endblock %}
+  </main>
+
+  {% block pie %}
+  {# HU 31: pie de página con las redes y el WhatsApp de Ladyrose #}
+  <footer class="pie">
+    <div class="contenedor">
+      <div class="pie__rejilla">
+        <div>
+          <a href="{% url 'core:inicio' %}" class="marca">
+            <svg class="marca__simbolo" aria-hidden="true"><use href="#i-rosa"/></svg>
+            <span class="marca__nombre">Ladyrose</span>
+          </a>
+          <p>Bisutería artesanal hecha a mano en {{ LADYROSE.CIUDAD }}. Cada pieza lleva tiempo, cariño y una historia.</p>
+          <div class="pie__redes">
+            <a href="{{ LADYROSE.INSTAGRAM }}" target="_blank" rel="noopener">Instagram</a>
+            <a href="{{ LADYROSE.FACEBOOK }}" target="_blank" rel="noopener">Facebook</a>
+            <a href="{{ LADYROSE.TIKTOK }}" target="_blank" rel="noopener">TikTok</a>
+            <a href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener">WhatsApp</a>
+          </div>
+        </div>
+        <div>
+          <h4>Tienda</h4>
+          <ul>
+            <li><a href="{% url 'catalogo:lista' %}">Catálogo</a></li>
+            <li><a href="{% url 'catalogo:colecciones' %}">Colecciones</a></li>
+            <li><a href="{% url 'catalogo:galeria' %}">Galería de piezas vendidas</a></li>
+            <li><a href="{% url 'core:mayorista' %}">Compras al por mayor</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Ladyrose</h4>
+          <ul>
+            <li><a href="{% url 'cotizaciones:cotizar' %}">Pieza hecha a tu medida</a></li>
+            <li><a href="{% url 'cursos:lista' %}">Cursos y talleres</a></li>
+            <li><a href="{% url 'core:historia' %}">Nuestra historia</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Contacto</h4>
+          <ul>
+            <li><a href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener">WhatsApp</a></li>
+            <li><a href="mailto:{{ LADYROSE.CORREO }}">{{ LADYROSE.CORREO }}</a></li>
+            <li>{{ LADYROSE.CIUDAD }}</li>
+          </ul>
+        </div>
+      </div>
+      <div class="pie__base">
+        <span>© {% now "Y" %} Ladyrose. Todo es posible.</span>
+        <span>Pago contra entrega o transferencia</span>
+      </div>
+    </div>
+  </footer>
+  <a class="boton-whatsapp" href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener" aria-label="Escríbenos por WhatsApp">
+    <svg aria-hidden="true"><use href="#i-chat"/></svg>
+  </a>
+  {% endblock %}
+  <script src="{% static 'js/main.js' %}"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

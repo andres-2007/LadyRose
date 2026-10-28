@@ -1,0 +1,9 @@
+{% load ladyrose %}
+{# HU 31: botón "Compartir" para copiar el enlace o enviarlo por WhatsApp o Facebook #}
+<div class="compartir">
+  <span class="compartir__titulo">Compartir</span>
+  <button type="button" data-copiar="{% url_compartir objeto 'instagram' %}">Copiar para Instagram</button>
+  <button type="button" data-copiar="{% url_compartir objeto 'tiktok' %}">Copiar para TikTok</button>
+  <a href="{% whatsapp_compartir objeto %}" target="_blank" rel="noopener">WhatsApp</a>
+  <a href="{% facebook_compartir objeto %}" target="_blank" rel="noopener">Facebook</a>
+</div>

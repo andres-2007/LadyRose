@@ -1,0 +1,49 @@
+{% extends "pedidos/panel/base_panel.html" %}
+{% block titulo %}Pedidos pendientes{% endblock %}
+{% block contenido %}
+<div class="contenedor">
+  <div class="panel-titulo">
+    <div>
+      <h1>Hola, {{ request.user.first_name|default:request.user.username }}</h1>
+      <p>{{ pendientes|length }} pedido{{ pendientes|length|pluralize }} por hacer · {{ listos|length }} listo{{ listos|length|pluralize }} para envío</p>
+    </div>
+  </div>
+
+  <div class="panel-columnas">
+    <section class="panel-seccion" data-lista-pendientes>
+      <h2>Pedidos pendientes <span class="contador-burbuja">{{ pendientes|length }}</span></h2>
+      {# HU 01 CA 2: dos formas de ordenar, independientes #}
+      <div class="panel-herramientas">
+        <div class="panel-herramientas__grupo">
+          <span>Ordenar</span>
+          <a class="chip {% if orden == 'fecha' %}activo{% endif %}" href="?orden=fecha{% if tecnica_actual %}&tecnica={{ tecnica_actual|urlencode }}{% endif %}">Fecha de entrega más próxima</a>
+          <a class="chip {% if orden == 'tecnica' %}activo{% endif %}" href="?orden=tecnica{% if tecnica_actual %}&tecnica={{ tecnica_actual|urlencode }}{% endif %}">Técnica / tiempo de elaboración</a>
+        </div>
+        {% if tecnicas %}
+        <div class="panel-herramientas__grupo">
+          <span>Técnica</span>
+          <a class="chip {% if not tecnica_actual %}activo{% endif %}" href="?orden={{ orden }}">Todas</a>
+          {% for t in tecnicas %}<a class="chip {% if tecnica_actual == t %}activo{% endif %}" href="?orden={{ orden }}&tecnica={{ t|urlencode }}">{{ t }}</a>{% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      {% if pendientes %}
+        <div class="pedidos">{% for p in pendientes %}{% include "pedidos/panel/_tarjeta.html" %}{% endfor %}</div>
+      {% else %}
+        {# HU 01 CA 3 #}
+        <div class="panel-vacio"><p>No tienes pedidos pendientes</p><span class="texto-suave">Cuando entre un pedido nuevo aparece aquí.</span></div>
+      {% endif %}
+    </section>
+
+    {# HU 04 CA 2: lo terminado sale de la lista y pasa a "Listos para envío" #}
+    <section class="panel-seccion listos">
+      <h2>Listos para envío <span class="contador-burbuja">{{ listos|length }}</span></h2>
+      {% if listos %}
+        <div class="pedidos">{% for p in listos %}{% include "pedidos/panel/_tarjeta.html" %}{% endfor %}</div>
+      {% else %}
+        <div class="panel-vacio" style="padding:28px 16px"><span class="texto-suave">Aún no hay pedidos terminados.</span></div>
+      {% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

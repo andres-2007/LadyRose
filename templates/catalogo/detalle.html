@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}{{ producto.nombre }}{% endblock %}
+{% block og_titulo %}{{ producto.nombre }} · {{ producto.precio_actual|pesos }}{% endblock %}
+{% block og_descripcion %}{{ producto.descripcion|truncatechars:150 }}{% endblock %}
+{% block og_imagen %}{% with foto=producto.foto_principal %}{% if foto %}<meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{{ foto.imagen.url }}">{% endif %}{% endwith %}{% endblock %}
+
+{% block contenido %}
+<div class="contenedor">
+  <article class="ficha">
+    <div class="ficha__galeria">
+      <div class="ficha__principal">
+        {% with foto=producto.foto_principal %}
+          {% if foto %}<img data-foto-principal src="{{ foto.imagen.url }}" alt="{{ producto.nombre }}">{% else %}<div class="tarjeta__sin-foto">Sin foto</div>{% endif %}
+        {% endwith %}
+        <div class="etiquetas">
+          {% if producto.en_galeria %}<span class="etiqueta etiqueta--tinta">Vendida</span>{% elif producto.pieza_unica %}<span class="etiqueta">Pieza única</span>{% endif %}
+          {% if producto.en_oferta and not producto.vendida %}<span class="etiqueta etiqueta--rosa">Oferta</span>{% endif %}
+        </div>
+      </div>
+      {% if producto.fotos.all|length > 1 %}
+      <div class="ficha__miniaturas">
+        {% for foto in producto.fotos.all %}
+          <button type="button" class="{% if forloop.first %}activa{% endif %}" data-miniatura="{{ foto.imagen.url }}" aria-label="Ver foto {{ forloop.counter }}">
+            <img src="{{ foto.imagen.url }}" alt="" loading="lazy">
+          </button>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="ficha__info">
+      <p class="migas">
+        <a href="{% url 'catalogo:lista' %}">Catálogo</a> &nbsp;/&nbsp;
+        <a href="{% url 'catalogo:lista' %}?categoria={{ producto.categoria.slug }}">{{ producto.categoria }}</a>
+      </p>
+      <h1>{{ producto.nombre }}</h1>
+
+      {% if producto.en_galeria %}
+        {# HU 08: las piezas de la galería no tienen botón de compra #}
+        <div class="aviso aviso--neutro">{{ aviso_galeria }}</div>
+        {% if producto.descripcion %}<p class="ficha__descripcion">{{ producto.descripcion|linebreaksbr }}</p>{% endif %}
+        <a class="boton boton--bloque" href="{% url 'cotizaciones:inspirada' producto.slug %}">Quiero una inspirada en esta</a>
+        <p class="campo__ayuda" style="margin-top:10px">Te enviamos la cotización en menos de {{ LADYROSE.TIEMPO_RESPUESTA }}.</p>
+      {% else %}
+        <p class="precio">
+          {% if producto.en_oferta %}<del>{{ producto.precio|pesos }}</del><ins>{{ producto.precio_oferta|pesos }}</ins>
+            <span class="campo__ayuda">&nbsp;Oferta hasta el {{ producto.oferta_fin|date:"j \d\e F"|lower }}</span>
+          {% else %}{{ producto.precio|pesos }}{% endif %}
+        </p>
+        {% if producto.descripcion %}<p class="ficha__descripcion">{{ producto.descripcion|linebreaksbr }}</p>{% endif %}
+
+        <div class="ficha__datos">
+          {% if producto.material %}<span><strong>Material:</strong> {{ producto.material }}</span>{% endif %}
+          {% if producto.tecnica %}<span><strong>Técnica:</strong> {{ producto.tecnica }}</span>{% endif %}
+          <span><strong>Lista en:</strong> {{ producto.dias_elaboracion }} día{{ producto.dias_elaboracion|pluralize }} hábil{{ producto.dias_elaboracion|pluralize:"es" }}</span>
+        </div>
+
+        <form method="post" action="{% url 'pedidos:agregar' producto.pk %}" data-form-compra novalidate>
+          {% csrf_token %}
+          {% with tallas=producto.tallas_disponibles %}
+          {% if tallas %}
+            {# HU 02 y HU 19: selector que solo muestra las tallas disponibles #}
+            <fieldset class="opcion" data-requerido>
+              <legend>Tallas disponibles <span data-elegido>Elige una</span></legend>
+              <div class="pastillas">
+                {% for t in tallas %}
+                  <label class="pastilla">
+                    <input type="radio" name="talla" value="{{ t.pk }}" required data-texto="{{ t.nombre }} · {{ t.medida }}">
+                    <span>{{ t.nombre }}<small>{{ t.medida }}</small></span>
+                  </label>
+                {% endfor %}
+              </div>
+              <p class="errores oculto" data-aviso style="margin-top:8px">Elige una talla para continuar.</p>
+            </fieldset>
+          {% endif %}
+          {% endwith %}
+
+          {% if producto.lista_colores|length > 1 %}
+            <fieldset class="opcion" data-requerido>
+              <legend>Color <span data-elegido>Elige uno</span></legend>
+              <div class="pastillas">
+                {% for c in producto.lista_colores %}
+                  <label class="pastilla"><input type="radio" name="color" value="{{ c }}" required><span>{{ c }}</span></label>
+                {% endfor %}
+              </div>
+              <p class="errores oculto" data-aviso style="margin-top:8px">Elige un color para continuar.</p>
+            </fieldset>
+          {% endif %}
+
+          <div class="compra">
+            {% if not producto.pieza_unica %}
+            <div class="cantidad" data-cantidad>
+              <button type="button" data-paso="-1" aria-label="Quitar uno">−</button>
+              <input type="number" name="cantidad" value="1" min="1" max="20" aria-label="Cantidad">
+              <button type="button" data-paso="1" aria-label="Agregar uno">+</button>
+            </div>
+            {% else %}<input type="hidden" name="cantidad" value="1">{% endif %}
+            <button class="boton boton--rosa" type="submit" {% if producto.pieza_unica %}style="grid-column:1 / -1"{% endif %}>Agregar al carrito</button>
+          </div>
+          <div class="compra-secundaria">
+            <button class="boton boton--borde" type="submit" name="siguiente" value="pagar">Comprar ahora</button>
+          </div>
+        </form>
+
+        <hr class="separador">
+        <p style="display:flex;flex-wrap:wrap;gap:8px 18px;font-size:.9rem;margin:0">
+          {# HU 34: el cliente pide cambios sobre el producto #}
+          <a href="{% url 'cotizaciones:personalizar' producto.slug %}">Quiero personalizarlo</a>
+          {# HU 31: también se puede comprar por WhatsApp #}
+          <a target="_blank" rel="noopener" href="{% whatsapp_tienda LADYROSE.WHATSAPP 'Hola, quiero comprar: '|add:producto.nombre %}">Comprar por WhatsApp</a>
+        </p>
+      {% endif %}
+
+      <div style="margin-top:22px">
+        {% if producto.tallas_disponibles and not producto.en_galeria %}
+        <details class="desplegable">
+          <summary>Guía de medidas</summary>
+          <div class="desplegable__contenido">{% include "partials/guia_medidas.html" %}</div>
+        </details>
+        {% endif %}
+        {# HU 02: instrucciones de cuidado, aviso por defecto y texto del pH #}
+        <details class="desplegable" open>
+          <summary>Cuidados</summary>
+          <div class="desplegable__contenido">
+            {% if producto.instrucciones_cuidado %}<p>{{ producto.instrucciones_cuidado|linebreaksbr }}</p>{% endif %}
+            <p class="aviso">{{ aviso_cuidados }}</p>
+            <p class="aviso aviso--neutro">{{ texto_ph }}</p>
+          </div>
+        </details>
+        <details class="desplegable">
+          <summary>Envíos y pagos</summary>
+          <div class="desplegable__contenido">Enviamos a toda Colombia. Puedes pagar contra entrega o por transferencia antes del envío. Si es un regalo, elige el empaque y escribe la nota al pagar.</div>
+        </details>
+      </div>
+
+      {% with objeto=producto %}{% include "partials/compartir.html" %}{% endwith %}
+    </div>
+  </article>
+
+  {% if relacionados %}
+  <section class="seccion" style="padding-top:24px">
+    <div class="encabezado-seccion"><h2>También te puede gustar</h2></div>
+    <div class="rejilla">{% for producto in relacionados %}{% include "catalogo/_tarjeta.html" %}{% endfor %}</div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

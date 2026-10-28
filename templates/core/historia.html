@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block titulo %}Nuestra historia{% endblock %}
+{% block contenido %}
+<div class="contenedor">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Ladyrose</span>
+    <h1>{{ historia.titulo }}</h1>
+  </header>
+  <div class="historia">
+    <div>
+      {% if historia.texto %}<div class="historia__texto">{{ historia.texto|linebreaks }}</div>{% endif %}
+      {% if historia.video_url %}
+        <div class="video" style="margin-top:26px">
+          <iframe src="{{ historia.video_embed }}" title="Video de Ladyrose" allowfullscreen loading="lazy"></iframe>
+        </div>
+      {% endif %}
+    </div>
+    {% if historia.fotos.all %}
+      <div class="historia__fotos">
+        {% for foto in historia.fotos.all %}
+          <figure>
+            <img src="{{ foto.imagen.url }}" alt="{{ foto.descripcion|default:'Taller de Ladyrose' }}" loading="lazy">
+            {% if foto.descripcion %}<figcaption>{{ foto.descripcion }}</figcaption>{% endif %}
+          </figure>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{# HU 18: lema de la marca #}
+<section class="seccion--tinta lema">
+  <div class="contenedor">
+    <svg class="adorno" aria-hidden="true"><use href="#i-adorno"/></svg>
+    <blockquote>“{{ lema }}”</blockquote>
+  </div>
+</section>
+{% endblock %}

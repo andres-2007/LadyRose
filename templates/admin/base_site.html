@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+{% load static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | Panel de Ladyrose{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/fuentes.css' %}">
+<link rel="stylesheet" href="{% static 'css/panel.css' %}">
+{% endblock %}
+{% block branding %}
+<div id="site-name"><a href="{% url 'admin:index' %}">Ladyrose <span>panel</span></a></div>
+
+{% endblock %}
+{% block userlinks %}
+  {% if perms.pedidos.view_pedido %}<a href="{% url 'pedidos:panel' %}">Pedidos de producción</a> /{% endif %}
+  {{ block.super }}
+{% endblock %}
+{% block nav-global %}{% endblock %}

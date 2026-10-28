@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static ladyrose %}
+{% block titulo %}Joyería artesanal hecha a mano en Cali{% endblock %}
+
+{% block contenido %}
+<section class="portada">
+  <div class="contenedor portada__rejilla">
+    <div class="portada__texto">
+      <span class="antetitulo">Bisutería artesanal · Cali</span>
+      <h1>Joyas hechas <em>a mano</em>, pensadas para quien las lleva</h1>
+      <p>Collares, pulseras y aretes que nacen en nuestro taller, uno por uno. Elige una pieza del catálogo o cuéntanos tu idea y la hacemos contigo.</p>
+      <div class="portada__acciones">
+        <a class="boton" href="{% url 'catalogo:lista' %}">Ver el catálogo</a>
+        <a class="boton boton--borde" href="{% url 'cotizaciones:cotizar' %}">Diseñar mi pieza</a>
+      </div>
+    </div>
+    <div class="portada__imagen">
+      <div class="arco"><img src="{% static 'img/portada.jpg' %}" alt="Collar y aretes artesanales de Ladyrose"></div>
+      <div class="sello"><small>Nuestro lema</small>{{ lema }}</div>
+    </div>
+  </div>
+</section>
+
+<section class="confianza" aria-label="Por qué Ladyrose">
+  <ul class="contenedor confianza__lista">
+    <li><svg aria-hidden="true"><use href="#i-mano"/></svg><div><strong>Hecho a mano</strong><span>En nuestro taller en Cali</span></div></li>
+    <li><svg aria-hidden="true"><use href="#i-gema"/></svg><div><strong>Piezas únicas</strong><span>Nada sale en serie</span></div></li>
+    <li><svg aria-hidden="true"><use href="#i-camion"/></svg><div><strong>Envíos nacionales</strong><span>A toda Colombia</span></div></li>
+    <li><svg aria-hidden="true"><use href="#i-pago"/></svg><div><strong>Pago contra entrega</strong><span>O por transferencia</span></div></li>
+  </ul>
+</section>
+
+{% if colecciones %}
+<section class="seccion">
+  <div class="contenedor">
+    <div class="encabezado-seccion">
+      <div>
+        <span class="antetitulo">Colecciones</span>
+        <h2>Lo que estamos tejiendo esta temporada</h2>
+      </div>
+      <a class="enlace-flecha" href="{% url 'catalogo:colecciones' %}">Ver todas</a>
+    </div>
+    <div class="colecciones">
+      {% for c in colecciones %}
+      <a class="coleccion" href="{{ c.get_absolute_url }}">
+        {% if c.portada %}<img src="{{ c.portada.url }}" alt="" loading="lazy">{% endif %}
+        <div class="coleccion__texto"><h3>{{ c.nombre }}</h3><span>Ver colección</span></div>
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="seccion {% if colecciones %}seccion--arena{% endif %}">
+  <div class="contenedor">
+    <div class="encabezado-seccion">
+      <div>
+        <span class="antetitulo">Recién salidas del taller</span>
+        <h2>Lo más nuevo</h2>
+      </div>
+      <a class="enlace-flecha" href="{% url 'catalogo:lista' %}">Todo el catálogo</a>
+    </div>
+    {% if productos %}
+      <div class="rejilla">{% for producto in productos %}{% include "catalogo/_tarjeta.html" %}{% endfor %}</div>
+    {% else %}
+      <p class="texto-suave">Muy pronto vas a ver aquí nuestras piezas.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="seccion">
+  <div class="contenedor medida">
+    <div class="medida__imagen"><img src="{% static 'img/hecho-a-tu-medida.jpg' %}" alt="Mesa de trabajo con mostacillas e hilos" loading="lazy"></div>
+    <div>
+      <span class="antetitulo">Hecho a tu medida</span>
+      <h2>¿Tienes una idea? <em>La hacemos realidad</em></h2>
+      <p class="texto-suave">Un regalo para tu mamá, los aretes de tu boda o una pulsera con las iniciales de tus hijos. Cuéntanos para quién es y nosotras nos encargamos del resto.</p>
+      <ol class="pasos">
+        <li><div><strong>Nos cuentas tu idea</strong><span>Con fotos de referencia si las tienes.</span></div></li>
+        <li><div><strong>Te enviamos la cotización</strong><span>En menos de {{ LADYROSE.TIEMPO_RESPUESTA }}.</span></div></li>
+        <li><div><strong>La hacemos a mano</strong><span>Y te la llevamos a donde estés.</span></div></li>
+      </ol>
+      <a class="boton" href="{% url 'cotizaciones:cotizar' %}">Pedir una cotización</a>
+    </div>
+  </div>
+</section>
+
+{% if cursos %}
+<section class="seccion seccion--arena">
+  <div class="contenedor">
+    <div class="encabezado-seccion">
+      <div>
+        <span class="antetitulo">Cursos y talleres</span>
+        <h2>Aprende a hacer tus propias piezas</h2>
+        <p>Clases pequeñas, presenciales o virtuales, con todos los materiales incluidos.</p>
+      </div>
+      <a class="enlace-flecha" href="{% url 'cursos:lista' %}">Ver cursos</a>
+    </div>
+    <div class="rejilla rejilla--3">{% for curso in cursos %}{% include "cursos/_tarjeta.html" %}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+{% if galeria %}
+<section class="seccion">
+  <div class="contenedor">
+    <div class="encabezado-seccion">
+      <div>
+        <span class="antetitulo">Galería de piezas vendidas</span>
+        <h2>Piezas que ya encontraron dueña</h2>
+        <p>Inspírate en trabajos anteriores y pídenos una pieza parecida.</p>
+      </div>
+      <a class="enlace-flecha" href="{% url 'catalogo:galeria' %}">Ver la galería</a>
+    </div>
+    <div class="rejilla">{% for producto in galeria %}{% include "catalogo/_tarjeta.html" %}{% endfor %}</div>
+  </div>
+</section>
+{% endif %}
+
+<section class="seccion--tinta lema">
+  <div class="contenedor">
+    <svg class="adorno" aria-hidden="true"><use href="#i-adorno"/></svg>
+    <blockquote>{{ lema }}</blockquote>
+    <p>Ladyrose empezó como un sueño familiar en una mesa llena de mostacillas. Hoy cada pieza sigue saliendo de las mismas manos.</p>
+    <a class="boton boton--claro" href="{% url 'core:historia' %}" style="margin-top:26px">Conoce nuestra historia</a>
+  </div>
+</section>
+{% endblock %}
