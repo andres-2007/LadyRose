@@ -10,14 +10,19 @@ from .models import Curso
 
 
 def lista(request):
-    cursos = Curso.objects.publicados().prefetch_related("fotos", "inscripciones")
-    return render(request, "cursos/lista.html", {"cursos": cursos})
+    cursos = Curso.objects.proximos().prefetch_related("fotos", "inscripciones")
+    realizados = Curso.objects.realizados().prefetch_related("fotos")
+    return render(request, "cursos/lista.html", {"cursos": cursos, "realizados": realizados})
 
 
 def detalle(request, slug):
     curso = get_object_or_404(Curso.objects.publicados().prefetch_related("fotos"), slug=slug)
     form = InscripcionForm(curso=curso)
     if request.method == "POST":
+        # Los cursos que ya se realizaron no reciben inscripciones.
+        if curso.realizado:
+            messages.error(request, "Este curso ya se realizó. Escríbenos para conocer las próximas fechas.")
+            return redirect(curso.get_absolute_url())
         # HU 21: si no quedan cupos, no se aceptan inscripciones.
         if curso.agotado:
             messages.error(request, "Este curso está agotado.")

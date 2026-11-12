@@ -15,7 +15,7 @@
       </div>
     </div>
     <div class="portada__imagen">
-      <div class="arco"><img src="{% static 'img/portada.jpg' %}" alt="Collar y aretes artesanales de Ladyrose"></div>
+      <div class="arco"><img src="{% static 'img/portada.jpg' %}" alt="Maxicollar Sagrado Corazón de Ladyrose, en cuentas turquesa y rojas"></div>
       <div class="sello"><small>Nuestro lema</small>{{ lema }}</div>
     </div>
   </div>
@@ -71,7 +71,7 @@
 
 <section class="seccion">
   <div class="contenedor medida">
-    <div class="medida__imagen"><img src="{% static 'img/hecho-a-tu-medida.jpg' %}" alt="Mesa de trabajo con mostacillas e hilos" loading="lazy"></div>
+    <div class="medida__imagen"><img src="{% static 'img/hecho-a-tu-medida.jpg' %}" alt="Collar personalizado con el nombre LAU, hecho a pedido" loading="lazy"></div>
     <div>
       <span class="antetitulo">Hecho a tu medida</span>
       <h2>¿Tienes una idea? <em>La hacemos realidad</em></h2>
@@ -92,8 +92,13 @@
     <div class="encabezado-seccion">
       <div>
         <span class="antetitulo">Cursos y talleres</span>
+        {% if cursos_son_realizados %}
+        <h2>Talleres que ya hicimos</h2>
+        <p>Pronto anunciamos nuevas fechas. Mira lo que hemos aprendido juntas.</p>
+        {% else %}
         <h2>Aprende a hacer tus propias piezas</h2>
         <p>Clases pequeñas, presenciales o virtuales, con todos los materiales incluidos.</p>
+        {% endif %}
       </div>
       <a class="enlace-flecha" href="{% url 'cursos:lista' %}">Ver cursos</a>
     </div>

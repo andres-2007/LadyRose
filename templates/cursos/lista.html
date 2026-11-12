@@ -12,5 +12,17 @@
   {% else %}
     <div class="vacio"><h2>Pronto publicaremos nuevos cursos</h2><p>Síguenos en Instagram para enterarte primero.</p></div>
   {% endif %}
+
+  {# Cursos cuya fecha ya pasó: se muestran como experiencia de Ladyrose, sin inscripción #}
+  {% if realizados %}
+  <section class="cursos-realizados" aria-labelledby="titulo-realizados">
+    <header class="cabecera-pagina">
+      <span class="antetitulo">Nuestra experiencia</span>
+      <h2 id="titulo-realizados">Ya realizados</h2>
+      <p>Talleres que ya hicimos. Si te interesa alguno, escríbenos y te avisamos cuando abramos una nueva fecha.</p>
+    </header>
+    <div class="rejilla rejilla--3">{% for curso in realizados %}{% include "cursos/_tarjeta.html" %}{% endfor %}</div>
+  </section>
+  {% endif %}
 </div>
 {% endblock %}

@@ -32,7 +32,8 @@ def lista(request):
     productos = productos.order_by(ORDENES[orden][0])
     return render(request, "catalogo/lista.html", {
         "productos": productos,
-        "categorias": Categoria.objects.all(),
+        # Solo las categorías con productos a la venta (la de la galería no sale en el catálogo)
+        "categorias": Categoria.objects.filter(productos__visible=True, productos__vendida=False).distinct(),
         "categoria_actual": categoria,
         "coleccion_actual": coleccion,
         "orden": orden,

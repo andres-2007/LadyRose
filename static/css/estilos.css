@@ -6,17 +6,20 @@
    ========================================================================== */
 
 :root {
-  --crema: #fbf7f2;
-  --arena: #f4ece3;
-  --arena-oscura: #ebdfd2;
-  --blush: #f3e1de;
-  --tinta: #2b2320;
-  --tinta-suave: #6e625b;
-  --rosa: #a14e5c;
-  --rosa-oscura: #853c49;
-  --oro: #b08a4e;
-  --linea: #e5d9cc;
-  --blanco: #fffdfa;
+  /* Paleta Ladyrose: rosa pastel de las fotos y el logo, vino del logo y fucsia de los volantes */
+  --crema: #fdf4f6;        /* fondo general (rosa casi blanco) */
+  --arena: #f9e3e8;        /* bloques y fondos de imágenes */
+  --arena-oscura: #f0c3cf;
+  --blush: #f8d7df;        /* rosa pastel del logo */
+  --texto: #3a2a2e;        /* texto principal */
+  --tinta: #5a1a24;        /* vino del logo: botones, bordes activos y fondos oscuros */
+  --tinta-suave: #745b62;  /* texto secundario */
+  --rosa: #c9336a;         /* fucsia para textos y enlaces (más oscuro para que se lea bien) */
+  --rosa-oscura: #a8275a;
+  --fucsia: #e0457b;       /* fucsia de los volantes: etiquetas, íconos y detalles */
+  --oro: var(--fucsia);    /* los íconos y adornos que antes eran dorados ahora son fucsia */
+  --linea: #f0d3db;
+  --blanco: #fffafb;
   --exito: #3f6b4f;
   --error: #b3322f;
 
@@ -25,7 +28,7 @@
 
   --radio: 4px;
   --radio-grande: 14px;
-  --sombra: 0 18px 40px -24px rgba(43, 35, 32, .35);
+  --sombra: 0 18px 40px -24px rgba(90, 26, 36, .35);
   --ancho: 1240px;
   --gutter: 16px;
 }
@@ -37,7 +40,7 @@ html, body { overflow-x: hidden; }
 body {
   margin: 0;
   background: var(--crema);
-  color: var(--tinta);
+  color: var(--texto);
   font-family: var(--sans);
   font-size: 16px;
   line-height: 1.6;
@@ -64,7 +67,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
   display: inline-block; font-size: .74rem; letter-spacing: .22em; text-transform: uppercase;
   color: var(--rosa); font-weight: 500; margin-bottom: 14px;
 }
-.seccion--tinta .antetitulo { color: #e4b9b9; }
+.seccion--tinta .antetitulo { color: var(--blush); }
 .encabezado-seccion { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 12px 24px; margin-bottom: 28px; }
 .encabezado-seccion h2 { margin: 0; }
 .encabezado-seccion p { margin: 6px 0 0; color: var(--tinta-suave); max-width: 520px; }
@@ -97,7 +100,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 
 /* ---------- Barra superior y encabezado ---------- */
 .anuncio {
-  background: var(--tinta); color: var(--crema); text-align: center;
+  background: var(--blush); color: var(--tinta); text-align: center;
   font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; padding: 9px var(--gutter);
 }
 .encabezado {
@@ -107,7 +110,8 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 }
 .encabezado__fila { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; height: 66px; }
 .marca { justify-self: center; display: inline-flex; align-items: center; gap: 10px; text-decoration: none; }
-.marca__simbolo { width: 30px; height: 30px; color: var(--rosa); flex: none; }
+/* Logo real de Ladyrose (static/img/logo-ladyrose.png) */
+.marca__logo { height: 52px; width: auto; display: block; }
 .marca__nombre { font-family: var(--serif); font-size: 1.85rem; font-weight: 500; letter-spacing: .04em; line-height: 1; }
 .icono-boton {
   width: 44px; height: 44px; display: inline-grid; place-items: center; position: relative;
@@ -116,7 +120,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .icono-boton svg { width: 22px; height: 22px; }
 .carrito-burbuja {
   position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px;
-  border-radius: 9px; background: var(--rosa); color: #fff; font-size: .66rem; font-weight: 600;
+  border-radius: 9px; background: var(--fucsia); color: #fff; font-size: .66rem; font-weight: 600;
   display: grid; place-items: center; line-height: 1;
 }
 /* HU 23: botón tipo hamburguesa en celular */
@@ -138,7 +142,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .menu a:hover, .menu a[aria-current="page"] { color: var(--rosa); }
 .menu__extra { margin-top: 24px; font-size: .9rem; color: var(--tinta-suave); }
 .menu__extra a { font-family: var(--sans); font-size: .9rem; border: 0; padding: 4px 0; display: block; }
-.velo { position: fixed; inset: 0; background: rgba(43, 35, 32, .35); z-index: 55; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.velo { position: fixed; inset: 0; background: rgba(90, 26, 36, .35); z-index: 55; opacity: 0; pointer-events: none; transition: opacity .3s; }
 .velo.visible { opacity: 1; pointer-events: auto; }
 
 /* ---------- Mensajes ---------- */
@@ -199,16 +203,17 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
   display: inline-block; background: var(--blanco); color: var(--tinta); padding: 5px 10px; border-radius: 2px;
   font-size: .62rem; letter-spacing: .16em; text-transform: uppercase; font-weight: 500;
 }
-.etiqueta--rosa { background: var(--rosa); color: #fff; }
+.etiqueta--rosa { background: var(--fucsia); color: #fff; }
 .etiqueta--tinta { background: var(--tinta); color: var(--crema); }
-.etiqueta--agotado { background: var(--tinta); color: var(--crema); }
+.etiqueta--agotado { background: var(--fucsia); color: #fff; }
+.etiqueta--realizado { background: var(--tinta); color: var(--crema); }
 
 /* Colecciones (HU 16) */
 .colecciones { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
 .coleccion { position: relative; display: block; border-radius: var(--radio-grande); overflow: hidden; aspect-ratio: 4 / 3; color: #fff; text-decoration: none; background: var(--arena); }
 .coleccion img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 1s ease; }
 .coleccion:hover img { transform: scale(1.05); }
-.coleccion::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(43, 35, 32, 0) 40%, rgba(43, 35, 32, .62)); }
+.coleccion::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(90, 26, 36, 0) 40%, rgba(90, 26, 36, .62)); }
 .coleccion__texto { position: absolute; z-index: 1; left: 22px; right: 22px; bottom: 20px; }
 .coleccion__texto h3 { font-size: 1.9rem; margin: 0 0 2px; }
 .coleccion__texto span { font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; }
@@ -287,7 +292,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 }
 .pastilla small { font-weight: 400; font-size: .74rem; color: var(--tinta-suave); }
 .pastilla input:checked + span { border-color: var(--tinta); background: var(--tinta); color: var(--crema); }
-.pastilla input:checked + span small { color: #d9cfc6; }
+.pastilla input:checked + span small { color: var(--blush); }
 .pastilla input:focus-visible + span { outline: 2px solid var(--rosa); outline-offset: 2px; }
 .pastilla--agotada span { text-decoration: line-through; color: var(--tinta-suave); background: var(--arena); }
 .tallas-lista { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 6px; padding: 0; list-style: none; }
@@ -392,8 +397,18 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 /* ---------- Cursos ---------- */
 .curso-tarjeta { display: grid; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio-grande); overflow: hidden; text-decoration: none; transition: box-shadow .3s, transform .3s; }
 .curso-tarjeta:hover { box-shadow: var(--sombra); transform: translateY(-2px); }
-.curso-tarjeta__imagen { position: relative; aspect-ratio: 4 / 3; background: var(--arena); }
-.curso-tarjeta__imagen img { width: 100%; height: 100%; object-fit: cover; }
+/* Las fotos de los cursos son volantes verticales: se muestran completos, sin recortar el texto */
+.curso-tarjeta__imagen { position: relative; aspect-ratio: 3 / 4; background: var(--blush); }
+.curso-tarjeta__imagen img { width: 100%; height: 100%; object-fit: contain; }
+.curso-tarjeta--realizado { opacity: .92; }
+/* Página del curso: el volante se ve completo */
+.ficha__principal--volante { aspect-ratio: 3 / 4; background: var(--blush); }
+.ficha__principal--volante img { object-fit: contain; }
+.ficha__miniaturas--volante button { aspect-ratio: 3 / 4; }
+.ficha__miniaturas--volante img { object-fit: contain; background: var(--blush); }
+.cursos-realizados { margin-top: 64px; padding-top: 40px; border-top: 1px solid var(--linea); }
+.cursos-realizados .cabecera-pagina { padding-top: 0; }
+.cursos-realizados h2 { margin-bottom: 8px; }
 .curso-tarjeta__cuerpo { padding: 20px; }
 .curso-tarjeta__cuerpo h3 { margin: 4px 0 8px; }
 .curso-tarjeta__datos { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .84rem; color: var(--tinta-suave); margin-bottom: 14px; }
@@ -431,18 +446,18 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .lista-check li::before { content: ""; width: 18px; height: 18px; margin-top: 4px; border-radius: 50%; border: 1px solid var(--oro); background: radial-gradient(circle, var(--oro) 35%, transparent 40%); }
 
 /* ---------- Pie de página (HU 31) ---------- */
-.pie { background: var(--tinta); color: #d9cfc6; padding: 56px 0 26px; font-size: .92rem; }
+.pie { background: var(--blush); color: var(--texto); padding: 56px 0 26px; font-size: .92rem; }
 .pie a { text-decoration: none; }
-.pie a:hover { color: #fff; }
+.pie a:hover { color: var(--rosa); }
 .pie__rejilla { display: grid; gap: 34px; }
-.pie .marca { justify-self: start; color: var(--crema); margin-bottom: 14px; }
-.pie .marca__simbolo { color: #e4b9b9; }
-.pie h4 { font-family: var(--sans); font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--crema); font-weight: 500; margin-bottom: 16px; }
+.pie .marca { justify-self: start; margin-bottom: 14px; }
+.pie .marca__logo { height: 92px; }
+.pie h4 { font-family: var(--sans); font-size: .72rem; letter-spacing: .2em; text-transform: uppercase; color: var(--tinta); font-weight: 500; margin-bottom: 16px; }
 .pie ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
 .pie__redes { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-.pie__redes a { padding: 8px 14px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 999px; font-size: .8rem; }
-.pie__redes a:hover { border-color: #fff; }
-.pie__base { border-top: 1px solid rgba(255, 255, 255, .12); margin-top: 44px; padding-top: 22px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-size: .78rem; color: #a99d95; }
+.pie__redes a { padding: 8px 14px; border: 1px solid var(--arena-oscura); border-radius: 999px; font-size: .8rem; background: var(--blanco); }
+.pie__redes a:hover { border-color: var(--rosa); }
+.pie__base { border-top: 1px solid var(--arena-oscura); margin-top: 44px; padding-top: 22px; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; font-size: .78rem; color: var(--tinta-suave); }
 
 .boton-whatsapp {
   position: fixed; right: 16px; bottom: 16px; z-index: 40; width: 56px; height: 56px; border-radius: 50%;
@@ -459,9 +474,9 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .panel-barra__fila { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 60px; }
 .panel-barra .marca { justify-self: start; color: var(--crema); }
 .panel-barra .marca__nombre { font-size: 1.5rem; }
-.panel-barra .marca__simbolo { color: #e4b9b9; width: 24px; height: 24px; }
+.panel-barra .marca__logo { height: 44px; }
 .panel-barra nav { display: flex; gap: 6px; flex-wrap: wrap; font-size: .82rem; }
-.panel-barra nav a { text-decoration: none; padding: 6px 12px; border-radius: 999px; color: #d9cfc6; }
+.panel-barra nav a { text-decoration: none; padding: 6px 12px; border-radius: 999px; color: var(--blush); }
 .panel-barra nav a:hover, .panel-barra nav a.activo { background: rgba(255, 255, 255, .1); color: #fff; }
 .panel-titulo { padding: 28px 0 18px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 14px; }
 .panel-titulo h1 { font-size: clamp(2rem, 5vw, 2.8rem); margin: 0; }
@@ -489,7 +504,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .guardado.visible { opacity: 1; }
 .urgente { color: var(--error); font-weight: 500; }
 .insignia { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: .72rem; font-weight: 500; letter-spacing: .04em; background: var(--arena); }
-.insignia--pendiente { background: #efe7dc; }
+.insignia--pendiente { background: var(--arena); }
 .insignia--en_curso { background: #e3ecf5; color: #2e4f6e; }
 .insignia--en_pausa { background: #fbe9d3; color: #8a5414; }
 .insignia--terminado { background: #e2efe6; color: var(--exito); }
@@ -503,7 +518,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .detalle-pedido { display: grid; gap: 18px; padding-bottom: 60px; }
 .tarjeta-panel { background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio-grande); padding: 20px; }
 .tarjeta-panel h2 { font-size: 1.5rem; margin-bottom: 14px; }
-.tarjeta-panel--regalo { border: 2px solid var(--rosa); background: #fff8f7; }
+.tarjeta-panel--regalo { border: 2px solid var(--fucsia); background: var(--blanco); }
 .tarjeta-panel--regalo h2 { color: var(--rosa-oscura); }
 .nota-regalo { font-family: var(--serif); font-style: italic; font-size: 1.45rem; line-height: 1.3; background: var(--blanco); border-radius: var(--radio); padding: 16px 18px; margin-top: 10px; }
 .historia-cliente { font-family: var(--serif); font-size: 1.3rem; line-height: 1.35; border-left: 3px solid var(--oro); padding: 4px 0 4px 16px; white-space: pre-line; }
@@ -538,6 +553,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
   .menu-boton { visibility: hidden; pointer-events: none; }
   .encabezado__fila { grid-template-columns: 1fr auto 1fr; height: 76px; }
   .marca__nombre { font-size: 2.1rem; }
+  .encabezado .marca__logo { height: 62px; }
   .menu {
     position: static; transform: none; width: auto; padding: 0 0 12px; background: none; box-shadow: none;
     flex-direction: row; justify-content: center; gap: 30px; overflow: visible;

@@ -106,6 +106,8 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = "es-co"
+# La página siempre en español, aunque el navegador de la persona esté en otro idioma
+LANGUAGES = [("es-co", "Español")]
 TIME_ZONE = "America/Bogota"
 USE_I18N = True
 USE_TZ = True
@@ -138,10 +140,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # Datos de contacto de Ladyrose que se usan en el pie de página y en los botones
 # de WhatsApp (HU 31). Se pueden cambiar en el archivo .env.
 LADYROSE = {
-    "WHATSAPP": os.environ.get("LADYROSE_WHATSAPP", "573000000000"),
-    "INSTAGRAM": os.environ.get("LADYROSE_INSTAGRAM", "https://www.instagram.com/"),
-    "FACEBOOK": os.environ.get("LADYROSE_FACEBOOK", "https://www.facebook.com/"),
-    "TIKTOK": os.environ.get("LADYROSE_TIKTOK", "https://www.tiktok.com/"),
+    "WHATSAPP": os.environ.get("LADYROSE_WHATSAPP", "573207643861"),
+    "INSTAGRAM": os.environ.get("LADYROSE_INSTAGRAM", "https://www.instagram.com/ladyrose.accesorios/?hl=es"),
+    "TIKTOK": os.environ.get("LADYROSE_TIKTOK", "https://www.tiktok.com/@ladyrose.accesorios?_r=1&_t=ZS-9BKhkJit1cq"),
     # HU 34: tiempo estimado de respuesta que se le muestra al cliente
     "TIEMPO_RESPUESTA": os.environ.get("LADYROSE_TIEMPO_RESPUESTA", "24 horas hábiles"),
     # HU 24: datos que ve el cliente cuando elige pagar por transferencia
@@ -149,7 +150,7 @@ LADYROSE = {
         "LADYROSE_DATOS_TRANSFERENCIA",
         "Nequi o Bancolombia a nombre de Ladyrose. Escríbenos por WhatsApp y te enviamos el número de cuenta.",
     ),
-    "CORREO": os.environ.get("LADYROSE_CORREO", "hola@ladyrose.co"),
+    "CORREO": os.environ.get("LADYROSE_CORREO", "ladyrose@gmail.com"),
     "CIUDAD": os.environ.get("LADYROSE_CIUDAD", "Cali, Colombia"),
 }
 
@@ -164,6 +165,6 @@ if os.environ.get("EMAIL_HOST"):
     EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "1") == "1"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Ladyrose <hola@ladyrose.co>")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "Ladyrose <ladyrose@gmail.com>")
 
 LOGIN_URL = "admin:login"

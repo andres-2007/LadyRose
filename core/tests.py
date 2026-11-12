@@ -90,8 +90,11 @@ class HU31EnlacesRedesTests(PruebaConArchivos):
 
     def test_ca3_pie_de_pagina_con_redes_y_whatsapp(self):
         r = self.client.get(reverse("core:inicio"))
-        for red in ("Instagram", "Facebook", "TikTok", "WhatsApp"):
+        # Ladyrose no tiene página de Facebook: el pie lleva Instagram, TikTok y WhatsApp.
+        for red in ("Instagram", "TikTok", "WhatsApp"):
             self.assertContains(r, red)
+        self.assertContains(r, "https://wa.me/573207643861")
+        self.assertContains(r, "instagram.com/ladyrose.accesorios")
 
     def test_ca4_se_registra_el_canal_de_cada_visita(self):
         self.client.get(self.producto.get_absolute_url() + "?utm_source=instagram")

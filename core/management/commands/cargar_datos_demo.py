@@ -1,12 +1,17 @@
-"""Carga productos, colecciones, cursos, pedidos y contenido de ejemplo.
+"""Carga los productos, la galería y los cursos reales de Ladyrose.
 
 Uso:
     python manage.py cargar_datos_demo
+    python manage.py cargar_datos_demo --reiniciar   # borra los datos anteriores y los vuelve a cargar
 
-Las imágenes son ilustraciones de ejemplo (carpeta core/demo). La dueña las
-cambia por las fotos reales desde el panel.
+Las fotos son las de Ladyrose (carpeta core/demo), sacadas de su Instagram.
+Los precios, tallas y materiales son una propuesta inicial: la dueña y la
+diseñadora los ajustan desde el panel.
+
+Los pedidos, la cotización, los inscritos y las visitas son de ejemplo (clientes
+inventados) para poder mostrar el panel de producción y el panel de la dueña.
 """
-from datetime import timedelta
+from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
@@ -29,161 +34,295 @@ def archivo(nombre):
     return ContentFile((DEMO / f"{nombre}.jpg").read_bytes(), name=f"{nombre}.jpg")
 
 
-CUIDADO = "Guárdala sola en su bolsita para que no se raye y límpiala con un paño seco y suave."
+# Instrucciones de cuidado según el material (HU 02)
+CUIDADO_HILO = (
+    "Evita mojarla y no la uses en la piscina o el mar. Si se ensucia, límpiala con un paño "
+    "apenas húmedo y déjala secar al aire."
+)
+CUIDADO_CUENTAS = (
+    "Guárdalo extendido o en su bolsita para que el hilo no se deforme. Límpialo con un paño seco "
+    "y evita el contacto con agua y perfumes."
+)
+CUIDADO_CRISTAL = (
+    "Guárdala sola, en su bolsita o tarjeta, para que los cristales no se rayen. Límpiala con un "
+    "paño seco y suave."
+)
+CUIDADO_METAL = (
+    "Guárdalos en un lugar seco y sepáralos de otras piezas. Límpialos con un paño suave y seco "
+    "para que el dorado dure más."
+)
 
-COLECCIONES = [
-    ("Flores del Valle", "portadaFlores",
-     "Flores tejidas en mostacilla y flores secas atrapadas en resina, inspiradas en los jardines del Valle del Cauca."),
-    ("Lunas y estrellas", "portadaLunas",
-     "Lunas en alambre dorado y cielos de mostacilla para quienes viven de noche."),
-    ("Novias y fiestas", "portadaNovias",
-     "Perlas, tiaras y piezas delicadas para el día más importante."),
+AJUSTABLE = [("Única", "Ajustable con nudo corredizo")]
+PULSERA_S_M = [("S", "16 cm"), ("M", "18 cm")]
+
+# nombre, categoría, imagen, precio, técnica, material, colores, días, tallas, cuidado, descripción
+PRODUCTOS = [
+    ("Pulsera Corazón Rojo", "Pulseras", "pulsera-corazon-rojo", 18000, "Macramé",
+     "Hilo rojo, cuentas rojas y dije de corazón", "", 2, AJUSTABLE, CUIDADO_HILO,
+     "Pulsera tejida en hilo rojo con un corazón rojo brillante como protagonista. Es liviana y "
+     "sencilla, perfecta para usarla todos los días sola o junto a otras pulseras.\n\n"
+     "Se ajusta con nudo corredizo, así que le queda bien a casi cualquier muñeca. Un detalle "
+     "ideal para regalar en Amor y Amistad o en un cumpleaños."),
+    ("Pulsera Ojo Turco", "Pulseras", "pulsera-ojo-turco", 22000, "Enfilado",
+     "Cuentas verde menta, hilo elástico y dije de ojo turco con detalles dorados", "", 2, PULSERA_S_M,
+     CUIDADO_CUENTAS,
+     "Cuentas verde menta y, al centro, un ojo turco rodeado de detalles dorados. El ojo turco es "
+     "un símbolo de protección y buenos deseos, por eso es una de las pulseras que más se regalan.\n\n"
+     "Va enfilada en hilo elástico: se pone y se quita fácil, sin cierres."),
+    ("Pulsera Cuarzo Rosa", "Pulseras", "pulsera-cuarzo-rosa", 25000, "Macramé",
+     "Fragmentos de cuarzo rosa natural, hilo encerado y cuentas doradas", "", 2, AJUSTABLE,
+     CUIDADO_HILO,
+     "Fragmentos de cuarzo rosa natural montados sobre hilo encerado, con cierre de macramé "
+     "ajustable. El cuarzo rosa es conocido como la piedra del amor y la calma.\n\n"
+     "Como cada piedra es natural, el tono y la forma de los fragmentos cambian un poco de una "
+     "pulsera a otra: la tuya será única."),
+    ("Pulsera Escapulario Rojo", "Pulseras", "pulsera-escapulario-rojo", 32000, "Macramé",
+     "Hilo rojo tejido en macramé, cuentas y escapulario", "", 3, AJUSTABLE, CUIDADO_HILO,
+     "Una de las pulseras más pedidas de Ladyrose: macramé rojo con un escapulario, para llevar la "
+     "fe siempre en la muñeca.\n\n"
+     "La hemos hecho en todos los colores, pero el rojo es nuestro favorito. Si la quieres en otro "
+     "tono, pídela con el botón \"Quiero personalizarlo\"."),
+    ("Pulsera Escapulario Azul", "Pulseras", "pulsera-escapulario-azul", 35000, "Tejido en cristal",
+     "Cristales facetados azul cielo, cruces doradas y escapulario tejido en cristal", "", 3,
+     PULSERA_S_M, CUIDADO_CRISTAL,
+     "Pulsera de cristales azul cielo con pequeñas cruces doradas y un escapulario tejido a mano "
+     "en cristal alrededor de la imagen.\n\n"
+     "No es solo un accesorio: es un recordatorio de fe y de que, incluso en los días difíciles, no "
+     "estás sola."),
+    ("Dúo Escapulario Virgen del Carmen", "Pulseras", "duo-escapulario", 38000,
+     "Macramé y tejido en cristal",
+     "Dos pulseras en hilo rojo con detalles dorados y escapulario tejido en cristal rojo", "", 3,
+     AJUSTABLE, CUIDADO_CRISTAL,
+     "Dos pulseras en hilo rojo con detalles dorados, acompañadas de un escapulario de la Virgen "
+     "del Carmen tejido en cristal rojo. Puedes usarlas juntas o por separado.\n\n"
+     "Llegan en su tarjeta de Ladyrose, listas para regalar. Un regalo especial para el Día de la Madre."),
+    ("Maxicollar Sagrado Corazón", "Collares", "maxicollar-sagrado-corazon", 40000, "Enfilado",
+     "Cuentas grandes turquesa y rojas, cuentas doradas y dije de Sagrado Corazón", "", 4,
+     [("42 cm", "Clavícula")], CUIDADO_CUENTAS,
+     "Maxicollar de cuentas grandes en turquesa y rojo, con un Sagrado Corazón como dije central. "
+     "Es una pieza llamativa que le da vida a una camiseta básica o a un vestido sencillo.\n\n"
+     "Algunos de sus materiales son difíciles de conseguir, por eso los maxicollares se hacen en "
+     "cantidades pequeñas. Pregúntanos por otros colores."),
+    ("Maxicollar Corazón Rosa", "Collares", "maxicollar-corazon-rosa", 38000, "Enfilado",
+     "Cuentas grandes aguamarina, cuentas rosadas y dije de corazón rosa", "", 4,
+     [("42 cm", "Clavícula")], CUIDADO_CUENTAS,
+     "Maxicollar en cuentas color aguamarina con un corazón rosa pastel al centro. Sus tonos suaves "
+     "lo hacen fácil de combinar y queda perfecto con una blusa básica.\n\n"
+     "Si prefieres algo más sutil, mira nuestro choker o pídenos uno en cuentas más pequeñas."),
+    ("Maxicollar Concha Fucsia", "Collares", "maxicollar-concha-fucsia", 38000, "Enfilado",
+     "Cuentas grandes fucsia, cuentas doradas y dije de concha", "", 4,
+     [("42 cm", "Clavícula")], CUIDADO_CUENTAS,
+     "Cuentas fucsia brillante y una concha rosada como dije: un maxicollar alegre, con aire de "
+     "verano, para los días en que quieres que el accesorio sea el centro de tu look."),
+    ("Choker Sagrado Corazón Turquesa", "Collares", "choker-sagrado-corazon", 30000, "Enfilado",
+     "Mostacilla turquesa, cuentas doradas y dije de Sagrado Corazón", "", 3,
+     [("35 cm", "Base del cuello")], CUIDADO_CUENTAS,
+     "Choker de mostacilla turquesa con un Sagrado Corazón rojo y turquesa al centro. Se lleva "
+     "ajustado a la base del cuello y combina muy bien con escotes redondos o en V.\n\n"
+     "También te lo hacemos en tu color favorito."),
+    ("Aretes Dorados", "Aretes", "aretes-dorados", 22000, "Engarce",
+     "Topos y dijes en tono dorado", "", 2, [], CUIDADO_METAL,
+     "Aretes de topo en tono dorado con un dije colgante. Tenemos tres modelos: corazón, mano de "
+     "Fátima y cruz. Son livianos y discretos, para usarlos a diario o regalarlos.\n\n"
+     "Después de tu compra te escribimos por WhatsApp para confirmar el modelo que prefieres."),
+    ("Portagafas Pastel", "Portagafas", "portagafas-pastel", 25000, "Enfilado",
+     "Mostacilla y cuentas en colores pastel, con dijes de corazón y flor", "", 2,
+     [("70 cm", "Largo total")], CUIDADO_CUENTAS,
+     "Cadena para gafas de mostacilla en tonos pastel, con corazones y florecitas. Sujeta tus gafas "
+     "de sol o de lectura para que no se caigan ni se pierdan, y le pone color hasta a los días más "
+     "simples."),
+    ("Portagafas Turquesa", "Portagafas", "portagafas-turquesa", 25000, "Enfilado",
+     "Mostacilla turquesa con cuentas de colores", "", 2, [("70 cm", "Largo total")], CUIDADO_CUENTAS,
+     "Cadena para gafas en mostacilla turquesa con pequeños detalles de colores. Práctica para tener "
+     "tus gafas siempre a la mano y bonita para llevarla como accesorio con cualquier look."),
+    ("Bendición del Hogar", "Bendiciones y denarios", "bendicion-del-hogar", 35000, "Macramé",
+     "Hilos encerados, medallas religiosas, dijes y cuentas", "", 4, [], CUIDADO_HILO,
+     "Colgante tejido en macramé con medallas religiosas, dijes y cuentas, hecho para proteger y "
+     "bendecir tu casa. Se cuelga en la puerta de entrada y también lo puedes llevar en el carro.\n\n"
+     "Lo personalizamos con tus colores y las medallas que elijas. Si quieres aprender a hacerlo, "
+     "mira nuestro taller de Bendición del Hogar."),
+    ("Mini Denario", "Bendiciones y denarios", "mini-denario", 20000, "Enfilado",
+     "Perlas y cuentas de colores, dije de cruz o estrella y medalla religiosa",
+     "Blanco y rosa, Lila y verde, Blanco y azul", 2, [], CUIDADO_CUENTAS,
+     "Denario pequeño de diez cuentas con medalla religiosa, un recuerdo de fe para llevar contigo "
+     "o para regalar. El precio es por unidad.\n\n"
+     "También lo hacemos por cantidad como recordatorio para primeras comuniones y bautizos, con los "
+     "colores de tu celebración: pídelo desde \"Quiero personalizarlo\" y te enviamos la cotización."),
 ]
 
-# nombre, categoría, imagen, precio, oferta, técnica, material, colores, días, tallas, colecciones, única, vendida, descripción
-PRODUCTOS = [
-    ("Collar Flores de Miyuki", "Collares", "collarFlores", 68000, None, "Tejido Miyuki",
-     "Mostacillas Miyuki y cierre dorado", "Rosa, Lila, Coral", 4,
-     [("40 cm", "Base del cuello"), ("45 cm", "Clavícula"), ("50 cm", "Debajo de la clavícula")],
-     ["Flores del Valle"], False, False,
-     "Tres flores tejidas a mano, mostacilla por mostacilla. Liviano y perfecto para el día a día."),
-    ("Pulsera Macramé Tierra", "Pulseras", "pulseraMacrame", 32000, 26000, "Macramé",
-     "Hilo encerado y piedras naturales", "", 2,
-     [("XS", "14 cm"), ("S", "16 cm"), ("M", "18 cm"), ("L", "20 cm")], [], False, False,
-     "Nudos de macramé en tonos tierra con una turquesa al centro. Se ajusta con un nudo corredizo."),
-    ("Aretes Luna de Alambre", "Aretes", "aretesLuna", 42000, None, "Alambrismo",
-     "Alambre de cobre bañado en oro y perla de río", "Dorado, Plateado", 3, [],
-     ["Lunas y estrellas"], False, False,
-     "Lunas moldeadas a mano en alambre, con una perlita que se mueve cuando caminas."),
-    ("Aretes Gota de Resina", "Aretes", "aretesResina", 38000, None, "Resina",
-     "Resina, flores secas y ganchos de acero", "", 5, [], ["Flores del Valle"], False, False,
-     "Cada gota guarda una flor seca de verdad, así que ninguna es igual a otra."),
-    ("Collar Perla Barroca", "Collares", "collarPerla", 85000, None, "Engarce",
-     "Perla de río y cadena de acero dorado", "", 3, [("42 cm", "Clavícula"), ("45 cm", "Clavícula")],
-     ["Novias y fiestas"], False, False,
-     "Una perla de río de forma irregular colgando de una cadena fina. Elegante sin esfuerzo."),
-    ("Pulsera Noche Estrellada", "Pulseras", "pulseraEstrellas", 45000, None, "Tejido Miyuki",
-     "Mostacillas Miyuki y dijes de estrella", "", 3, [("S", "16 cm"), ("M", "18 cm")],
-     ["Lunas y estrellas"], False, False,
-     "Mostacilla azul noche con estrellitas doradas repartidas en toda la vuelta."),
-    ("Anillo Espiral", "Anillos", "anilloEspiral", 28000, None, "Alambrismo",
-     "Alambre de cobre bañado en oro y cuenta de cristal", "", 1,
-     [("6", "16,5 mm"), ("7", "17,3 mm"), ("8", "18,1 mm"), ("4", "14,9 mm (talla especial)")], [], False, False,
-     "Una espiral con una cuenta de cristal al centro. También lo hacemos en tallas pequeñas."),
-    ("Tiara Rocío", "Novias", "tiara", 180000, None, "Alambrismo",
-     "Alambre plateado, perlas y cristales", "", 8, [], ["Novias y fiestas"], True, False,
-     "Pieza única para novia. Perlas y cristales montados uno a uno sobre alambre plateado."),
-    # Galería de piezas vendidas (HU 08)
-    ("Collar Árbol de la Vida", "Collares", "collarArbol", 95000, None, "Alambrismo",
-     "Alambre dorado, cuarzo rosa y aventurina", "", 6, [], [], True, True,
-     "Un árbol tejido en alambre con hojas de cuarzo rosa y aventurina."),
-    ("Aretes Mariposa Monarca", "Aretes", "aretesMariposa", 48000, None, "Resina",
-     "Resina pintada a mano y ganchos dorados", "", 5, [], ["Flores del Valle"], True, True,
-     "Mariposas monarca pintadas a mano y selladas en resina."),
-    ("Pulsera Iniciales de Familia", "Pulseras", "pulseraIniciales", 36000, None, "Engarce",
-     "Mostacillas, cubos con letras e hilo elástico", "", 2, [], [], True, True,
-     "Hecha para una mamá con las iniciales de sus tres hijos."),
+# Galería de piezas vendidas (HU 08): pedidos especiales que ya se entregaron.
+# El precio no se muestra en la galería.
+GALERIA = [
+    ("Correa para celular personalizada", "correa-celular", 25000, "Enfilado",
+     "Cuentas de colores, florecitas y letras",
+     "Correa para celular con cuentas de colores, florecitas y letras con un nombre. La hicimos para "
+     "una mamá que quería llevar siempre cerca el nombre de alguien especial."),
+    ("Collar con nombre", "collar-nombre", 35000, "Enfilado",
+     "Perlas, mostacilla de colores, letras y dije de estrella",
+     "Doble collar: uno de perlas y otro de mostacilla de colores con letras lila que forman un "
+     "nombre, y una estrella al centro."),
+    ("Manilla Miyuki con logo de marca", "manilla-fuxion", 20000, "Tejido Miyuki",
+     "Mostacilla Miyuki",
+     "Manilla tejida en mostacilla Miyuki con el logo de una marca. Personalizamos manillas con el "
+     "logo de tu empresa o emprendimiento para eventos, equipos o regalos corporativos."),
+    ("Llavero San Benito en macramé", "llavero-san-benito", 30000, "Macramé",
+     "Hilo blanco y negro, medalla de San Benito y dijes",
+     "Llavero tejido en macramé blanco y negro con medalla de San Benito y dijes. Una pieza "
+     "personalizada, hecha a mano para una clienta muy especial."),
+    ("Pulsera roja y dorada con dijes", "pulsera-roja-dorada", 45000, "Macramé",
+     "Hilo rojo y blanco, argollas doradas y dijes",
+     "Pulsera de hilo rojo y blanco envuelta en argollas doradas, con dijes de ojo turco, piña, "
+     "estrella, ala y corazón. El rojo atrae fuerza y el dorado eleva la energía."),
+    ("Pulseras \"Para mi persona favorita\"", "pulseras-persona-favorita", 40000, "Enfilado",
+     "Mostacilla de colores, perlas, cruz turquesa y dijes dorados",
+     "Juego de pulseras de amistad en mostacilla de colores, entregadas en tarjetas de \"Para mi "
+     "persona favorita\". Con amigas todo es mejor."),
 ]
 
 EMPAQUES = [
-    ("Caja de regalo con cinta", "Caja rígida color crema con cinta de satín rosa", 8000),
-    ("Bolsa de regalo kraft", "Bolsa de papel con papel seda y sticker de Ladyrose", 5000),
+    ("Caja de regalo con cinta", "Caja rígida con cinta de satín rosa", 8000),
+    ("Bolsa de regalo", "Bolsa de papel con papel seda y sticker de Ladyrose", 5000),
 ]
 
+# Cursos que Ladyrose ya realizó. Se muestran en "Ya realizados".
+# nombre, fecha, horario, precio, materiales, imágenes, descripción
 CURSOS = [
-    ("Taller de tejido Miyuki", "Tejido Miyuki", Curso.Modalidad.PRESENCIAL, Curso.TipoClase.GRUPAL, 8, 120000,
-     "cursoMiyuki", "Mostacillas Miyuki, hilo, agujas, telar pequeño y cierre dorado.", 14, "",
-     "Aprende la técnica de tejido Miyuki y sal con tu propia pulsera de flores."),
-    ("Alambrismo desde cero", "Alambrismo", Curso.Modalidad.VIRTUAL, Curso.TipoClase.INDIVIDUAL, 1, 90000,
-     "cursoAlambre", "Kit enviado a tu casa: alambre de cobre, pinzas y cuentas.", 21, "https://meet.google.com/abc-defg-hij",
-     "Clase personalizada por videollamada. Hacemos juntas unos aretes de luna."),
-    ("Resina con flores secas", "Resina", Curso.Modalidad.AMBAS, Curso.TipoClase.GRUPAL, 6, 140000,
-     "cursoResina", "Resina, moldes de silicona, flores secas, guantes y herrajes.", 28, "https://meet.google.com/xyz-abcd-efg",
-     "Atrapa flores en resina y llévate un par de aretes y un dije terminados."),
+    ("Taller Bendición del Hogar", date(2026, 5, 16), "2:00 p.m. a 5:00 p.m.", 100000,
+     "Todos los materiales para tu pieza: hilos, dijes, medallas y detalles especiales.",
+     ["curso-bendicion-1", "curso-bendicion-2"],
+     "Taller presencial en Cali para crear tu propia bendición del hogar en técnica macramé. "
+     "Diseñas una pieza única, llena de fe, intención y protección para tu casa, con dijes, medallas "
+     "y detalles especiales.\n\n"
+     "Un espacio pensado para crear con calma, donde cada nudo lleva un significado. No necesitas "
+     "experiencia.\n\n"
+     "Lugar: Tienda Multimarca Regala'T, Valle del Lili."),
+    ("Curso de Bisutería Básica", date(2025, 3, 8), "3:00 p.m. a 6:00 p.m.", 80000,
+     "Materiales para la clase, certificado de participación, refrigerio y rifas.",
+     ["curso-bisuteria-2"],
+     "Curso presencial de tres horas para aprender las bases de la bisutería con la técnica "
+     "macramé. Sales con tu propia pulsera terminada.\n\n"
+     "Lugar: Cra. 97b #42-29, barrio Calicanto, Cali."),
+    ("Curso de Bisutería Básica", date(2025, 3, 22), "3:00 p.m. a 6:00 p.m.", 80000,
+     "Materiales e insumos para la clase, certificado de participación, refrigerio y regalo sorpresa.",
+     ["curso-bisuteria-1"],
+     "Si te apasionan los accesorios o quieres emprender en el mundo de la bisutería, este curso es "
+     "para ti. Aprendes tres tipos de tejido en macramé, a usar las herramientas básicas, a elegir "
+     "materiales e insumos y las medidas estándar de cada pieza.\n\n"
+     "Lugar: Cra. 97b #42-29, Valle del Lili, Cali."),
 ]
 
 
 class Command(BaseCommand):
-    help = "Carga datos de ejemplo para ver la página funcionando."
+    help = "Carga los productos, la galería y los cursos de Ladyrose, más pedidos de ejemplo."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--reiniciar", action="store_true",
+            help="Borra productos, colecciones, cursos, pedidos, cotizaciones y visitas antes de cargar. "
+                 "No toca los usuarios ni la configuración de la tienda.",
+        )
 
     @transaction.atomic
     def handle(self, *args, **opciones):
-        hoy = timezone.localdate()
-
-        colecciones = {}
-        for i, (nombre, imagen, descripcion) in enumerate(COLECCIONES):
-            c, creada = Coleccion.objects.get_or_create(nombre=nombre, defaults={"descripcion": descripcion, "orden": i,
-                                                                                 "portada": archivo(imagen)})
-            colecciones[nombre] = c
+        if opciones["reiniciar"]:
+            self._borrar()
 
         productos = {}
-        for (nombre, cat, imagen, precio, oferta, tecnica, material, colores, dias, tallas, cols,
-             unica, vendida, descripcion) in PRODUCTOS:
-            categoria, _ = Categoria.objects.get_or_create(nombre=cat)
-            p, creado = Producto.objects.get_or_create(nombre=nombre, defaults={
-                "categoria": categoria, "precio": precio, "descripcion": descripcion, "tecnica": tecnica,
-                "material": material, "colores": colores, "dias_elaboracion": dias,
-                "instrucciones_cuidado": CUIDADO, "pieza_unica": unica, "vendida": vendida,
-            })
-            productos[nombre] = p
-            if not creado:
-                continue
-            if oferta:
-                p.precio_oferta, p.oferta_inicio, p.oferta_fin = oferta, hoy - timedelta(days=2), hoy + timedelta(days=20)
-                p.save()
-            FotoProducto.objects.create(producto=p, imagen=archivo(f"{imagen}-1"), orden=0)
-            FotoProducto.objects.create(producto=p, imagen=archivo(f"{imagen}-2"), orden=1)
-            for i, (t, m) in enumerate(tallas):
-                TallaProducto.objects.create(producto=p, nombre=t, medida=m, orden=i,
-                                             disponible=not (nombre == "Pulsera Macramé Tierra" and t == "L"))
-            p.colecciones.set([colecciones[c] for c in cols])
+        for (nombre, cat, imagen, precio, tecnica, material, colores, dias, tallas, cuidado,
+             descripcion) in PRODUCTOS:
+            productos[nombre] = self._producto(nombre, cat, imagen, precio, tecnica, material, colores,
+                                               dias, tallas, cuidado, descripcion)
+
+        for nombre, imagen, precio, tecnica, material, descripcion in GALERIA:
+            self._producto(nombre, "Pedidos especiales", imagen, precio, tecnica, material, "", 5, [],
+                           "", descripcion, unica=True, vendida=True)
 
         for i, (nombre, descripcion, costo) in enumerate(EMPAQUES):
-            TipoEmpaque.objects.get_or_create(nombre=nombre, defaults={"descripcion": descripcion, "costo": costo, "orden": i})
+            TipoEmpaque.objects.get_or_create(nombre=nombre, defaults={"descripcion": descripcion, "costo": costo,
+                                                                       "orden": i})
 
-        for (nombre, tecnica, modalidad, tipo, cupos, precio, imagen, materiales, dias, enlace,
-             descripcion) in CURSOS:
-            c, creado = Curso.objects.get_or_create(nombre=nombre, defaults={
-                "tecnica": tecnica, "modalidad": modalidad, "tipo_clase": tipo, "materiales_incluidos": materiales,
-                "fecha": hoy + timedelta(days=dias), "horario": "9:00 a.m. a 12:00 m.", "precio": precio,
-                "cupos_maximos": cupos, "descripcion": descripcion, "enlace_conexion": enlace,
+        cursos = []
+        for nombre, fecha, horario, precio, materiales, imagenes, descripcion in CURSOS:
+            c, creado = Curso.objects.get_or_create(nombre=nombre, fecha=fecha, defaults={
+                "tecnica": "Macramé", "modalidad": Curso.Modalidad.PRESENCIAL,
+                "tipo_clase": Curso.TipoClase.GRUPAL, "materiales_incluidos": materiales,
+                "horario": horario, "precio": precio, "cupos_maximos": 20, "descripcion": descripcion,
             })
             if creado:
-                FotoCurso.objects.create(curso=c, imagen=archivo(imagen))
+                for orden, imagen in enumerate(imagenes):
+                    FotoCurso.objects.create(curso=c, imagen=archivo(imagen), orden=orden)
                 c.publicado = True
                 c.full_clean()
                 c.save()
-        miyuki = Curso.objects.get(nombre="Taller de tejido Miyuki")
-        if not miyuki.inscripciones.exists():
-            for nombre, pago in [("Valentina Ríos", "pagado"), ("Camila Ortiz", "pagado"), ("Daniela Mejía", "pendiente")]:
-                Inscripcion.objects.create(curso=miyuki, nombre=nombre, whatsapp="3001234567",
+            cursos.append(c)
+
+        # Inscritos de ejemplo para mostrar el panel (HU 26)
+        taller = cursos[0]
+        if not taller.inscripciones.exists():
+            for nombre, pago in [("Valentina Ríos", "pagado"), ("Camila Ortiz", "pagado"),
+                                 ("Daniela Mejía", "pendiente")]:
+                Inscripcion.objects.create(curso=taller, nombre=nombre, whatsapp="3001234567",
                                            correo=slugify(nombre.split()[0]) + "@correo.com",
                                            modalidad="presencial", estado_pago=pago)
 
-        historia = ContenidoHistoria.obtener()
-        if not historia.texto:
-            historia.texto = (
-                "Ladyrose empezó en la sala de una casa en Cali, con una caja de mostacillas y muchas ganas de "
-                "hacer cosas bonitas con las manos. Primero fueron regalos para la familia; después, pedidos de "
-                "amigas; y un día nos dimos cuenta de que esto ya era un taller.\n\n"
-                "Hoy cada pieza se sigue haciendo a mano, una por una. Por eso ninguna sale igual a otra, y por "
-                "eso nos gusta tanto escuchar para quién es cada accesorio que nos piden.\n\n"
-                "Este texto es de ejemplo: la dueña lo cambia desde el panel."
-            )
-            historia.save()
-            for imagen, texto in [("cursoMiyuki", "Mostacillas listas para tejer"),
-                                  ("cursoAlambre", "Alambre, pinzas y paciencia"),
-                                  ("cursoResina", "Flores secas atrapadas en resina")]:
-                FotoTaller.objects.create(historia=historia, imagen=archivo(imagen), descripcion=texto)
-
+        self._historia()
         self._pedidos(productos)
 
         if not VisitaOrigen.objects.exists():
-            for canal, n in [("instagram", 14), ("whatsapp", 8), ("facebook", 5), ("tiktok", 6), ("directo", 9)]:
+            for canal, n in [("instagram", 14), ("whatsapp", 8), ("tiktok", 6), ("directo", 9)]:
                 for _ in range(n):
                     VisitaOrigen.objects.create(canal=canal, pagina="/")
 
-        self.stdout.write(self.style.SUCCESS("Datos de ejemplo cargados."))
+        self.stdout.write(self.style.SUCCESS("Datos de Ladyrose cargados."))
+
+    # ------------------------------------------------------------------
+    def _borrar(self):
+        Pedido.objects.all().delete()
+        SolicitudCotizacion.objects.all().delete()
+        Curso.objects.all().delete()  # también borra fotos e inscripciones
+        Producto.objects.all().delete()  # también borra fotos y tallas
+        Categoria.objects.all().delete()
+        Coleccion.objects.all().delete()
+        TipoEmpaque.objects.all().delete()
+        VisitaOrigen.objects.all().delete()
+        historia = ContenidoHistoria.obtener()
+        historia.fotos.all().delete()
+        historia.texto = ""
+        historia.save()
+        self.stdout.write("Datos anteriores borrados.")
+
+    def _producto(self, nombre, cat, imagen, precio, tecnica, material, colores, dias, tallas, cuidado,
+                  descripcion, unica=False, vendida=False):
+        categoria, _ = Categoria.objects.get_or_create(nombre=cat)
+        p, creado = Producto.objects.get_or_create(nombre=nombre, defaults={
+            "categoria": categoria, "precio": precio, "descripcion": descripcion, "tecnica": tecnica,
+            "material": material, "colores": colores, "dias_elaboracion": dias,
+            "instrucciones_cuidado": cuidado, "pieza_unica": unica, "vendida": vendida,
+        })
+        if creado:
+            FotoProducto.objects.create(producto=p, imagen=archivo(imagen), orden=0)
+            for i, (t, m) in enumerate(tallas):
+                TallaProducto.objects.create(producto=p, nombre=t, medida=m, orden=i)
+        return p
+
+    def _historia(self):
+        historia = ContenidoHistoria.obtener()
+        if historia.texto:
+            return
+        historia.texto = (
+            "Este texto es de ejemplo: la dueña lo cambia desde el panel con la historia real de "
+            "Ladyrose.\n\n"
+            "Ladyrose hace bisutería artesanal en Cali: pulseras, collares, escapularios, bendiciones "
+            "del hogar y piezas personalizadas. Cada accesorio se hace a mano, uno por uno, y por eso "
+            "ninguno sale igual a otro.\n\n"
+            "También enseñamos lo que sabemos en nuestros talleres, porque tejer también es una forma "
+            "de encontrar calma."
+        )
+        historia.save()
+        for imagen, texto in [("pulsera-roja-dorada", "Hecho a mano, con mucho amor"),
+                              ("duo-escapulario", "Cada pieza llega lista para regalar"),
+                              ("pulseras-persona-favorita", "Detalles para las personas favoritas")]:
+            FotoTaller.objects.create(historia=historia, imagen=archivo(imagen), descripcion=texto)
 
     def _pedidos(self, productos):
         if Pedido.objects.exists():
@@ -191,18 +330,19 @@ class Command(BaseCommand):
         caja = TipoEmpaque.objects.get(nombre="Caja de regalo con cinta")
         cotizacion = SolicitudCotizacion.objects.create(
             tipo=SolicitudCotizacion.Tipo.PERSONALIZADA, nombre="Laura Gómez", whatsapp="3157654321",
-            correo="laura@correo.com", descripcion="Unos aretes de luna en plateado, un poco más pequeños.",
-            motivo="Son para mi abuela, que siempre dice que la luna la acompaña. Cumple 80 años.",
+            correo="laura@correo.com",
+            descripcion="Una correa para celular con cuentas en tonos lila y el nombre \"GLORIA\".",
+            motivo="Es para mi mamá, que siempre deja el celular en cualquier parte. Cumple 60 años.",
             acepta_pieza_unica=True, fecha_aceptacion=timezone.now(),
         )
         ejemplos = [
             # comprador, producto, talla, color, regalo, nota, estado, motivo, canal
-            ("Mariana López", "Collar Flores de Miyuki", "45 cm", "Rosa", caja,
+            ("Mariana López", "Maxicollar Sagrado Corazón", "42 cm", "", caja,
              "Feliz día, mamá. Gracias por enseñarme que todo es posible.", "pendiente",
-             "Es para mi mamá, le encantan las flores.", "instagram"),
-            ("Sofía Cárdenas", "Pulsera Macramé Tierra", "S", "", None, "", "en_curso", "", "tiktok"),
-            ("Andrea Patiño", "Aretes Gota de Resina", "", "", None, "", "en_pausa", "", "whatsapp"),
-            ("Juliana Vélez", "Pulsera Noche Estrellada", "M", "", None, "", "terminado", "", "facebook"),
+             "Es para mi mamá, le encantan los colores fuertes.", "instagram"),
+            ("Sofía Cárdenas", "Pulsera Cuarzo Rosa", "Única", "", None, "", "en_curso", "", "tiktok"),
+            ("Andrea Patiño", "Bendición del Hogar", "", "", None, "", "en_pausa", "", "whatsapp"),
+            ("Juliana Vélez", "Pulsera Ojo Turco", "M", "", None, "", "terminado", "", "directo"),
         ]
         for nombre, prod, talla, color, empaque, nota, estado, motivo, canal in ejemplos:
             p = productos[prod]
@@ -225,8 +365,9 @@ class Command(BaseCommand):
         personal = Pedido.objects.create(
             nombre="Laura Gómez", correo="laura@correo.com", telefono="3157654321", direccion="Carrera 100 # 11-60",
             barrio="Ciudad Jardín", ciudad="Cali", metodo_pago=Pedido.MetodoPago.TRANSFERENCIA,
-            cotizacion=cotizacion, motivo=cotizacion.motivo, tecnica="Alambrismo", dias_elaboracion=4,
-            subtotal=Decimal("48000"), total=Decimal("48000"),
+            cotizacion=cotizacion, motivo=cotizacion.motivo, tecnica="Enfilado", dias_elaboracion=4,
+            subtotal=Decimal("25000"), total=Decimal("25000"),
         )
-        DetallePedido.objects.create(pedido=personal, referencia="Aretes luna personalizados", talla="Pequeños",
-                                     color="Plateado", material="Alambre plateado", cantidad=1, precio_unitario=48000)
+        DetallePedido.objects.create(pedido=personal, referencia="Correa para celular personalizada",
+                                     color="Lila", material="Cuentas de colores y letras", cantidad=1,
+                                     precio_unitario=25000)

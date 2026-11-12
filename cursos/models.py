@@ -17,6 +17,14 @@ class CursoQuerySet(models.QuerySet):
     def publicados(self):
         return self.filter(publicado=True)
 
+    def proximos(self):
+        """Cursos publicados que todavía no se han realizado (hoy incluido)."""
+        return self.publicados().filter(fecha__gte=timezone.localdate())
+
+    def realizados(self):
+        """Cursos publicados cuya fecha ya pasó: se muestran en "Ya realizados", sin inscripción."""
+        return self.publicados().filter(fecha__lt=timezone.localdate()).order_by("-fecha")
+
 
 class Curso(models.Model):
     """HU 13 (información del curso) y HU 21 (control de cupos)."""
@@ -95,6 +103,11 @@ class Curso(models.Model):
 
     def get_absolute_url(self):
         return reverse("cursos:detalle", args=[self.slug])
+
+    @property
+    def realizado(self):
+        """El curso ya pasó: no recibe inscripciones."""
+        return bool(self.fecha and self.fecha < timezone.localdate())
 
     # ----- HU 21: control de cupos -----
     @property

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
+{% load static %}
 {% block clase_cuerpo %}panel-cuerpo{% endblock %}
 {% block barra %}
 <header class="panel-barra">
   <div class="contenedor panel-barra__fila">
     <a href="{% url 'pedidos:panel' %}" class="marca">
-      <svg class="marca__simbolo" aria-hidden="true"><use href="#i-rosa"/></svg>
-      <span class="marca__nombre">Ladyrose</span>
+      <img class="marca__logo" src="{% static 'img/logo-ladyrose-claro.png' %}" alt="Ladyrose Accesorios" width="317" height="240">
     </a>
     <nav>
       <a href="{% url 'pedidos:panel' %}" class="activo">Pedidos</a>

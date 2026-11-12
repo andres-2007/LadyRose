@@ -7,7 +7,7 @@ from .models import Curso, Inscripcion
 class InscripcionForm(forms.ModelForm):
     """HU 26 CA 1: nombre, WhatsApp, correo, curso y modalidad."""
 
-    curso = forms.ModelChoiceField(queryset=Curso.objects.publicados(), label="Curso", empty_label=None)
+    curso = forms.ModelChoiceField(queryset=Curso.objects.none(), label="Curso", empty_label=None)
 
     class Meta:
         model = Inscripcion
@@ -20,6 +20,8 @@ class InscripcionForm(forms.ModelForm):
 
     def __init__(self, *args, curso=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # Solo los cursos que todavía no se han realizado (la fecha se calcula en cada formulario)
+        self.fields["curso"].queryset = Curso.objects.proximos()
         self.fields["modalidad"].required = True
         self.fields["modalidad"].choices = [("", "Elige la modalidad")] + list(Inscripcion.Modalidad.choices)
         if curso:

@@ -1,49 +1,51 @@
 /* Panel de Ladyrose: el admin de Django con los colores de la marca */
 :root, html[data-theme], html[data-theme="dark"] {
-  --primary: #2b2320;
-  --secondary: #a14e5c;
-  --accent: #e4b9b9;
-  --primary-fg: #fbf7f2;
-  --body-fg: #2b2320;
-  --body-bg: #fbf7f2;
-  --body-quiet-color: #6e625b;
-  --body-loud-color: #2b2320;
-  --header-color: #e4b9b9;
-  --header-branding-color: #fbf7f2;
-  --header-bg: #2b2320;
-  --header-link-color: #fbf7f2;
-  --breadcrumbs-fg: #6e625b;
-  --breadcrumbs-link-fg: #2b2320;
-  --breadcrumbs-bg: #f4ece3;
-  --link-fg: #853c49;
-  --link-hover-color: #a14e5c;
-  --link-selected-fg: #a14e5c;
-  --hairline-color: #e5d9cc;
-  --border-color: #e5d9cc;
-  --darkened-bg: #f4ece3;
-  --selected-bg: #f3e1de;
-  --selected-row: #fbf0ee;
-  --button-fg: #fbf7f2;
-  --button-bg: #2b2320;
-  --button-hover-bg: #a14e5c;
-  --default-button-bg: #a14e5c;
-  --default-button-hover-bg: #853c49;
-  --close-button-bg: #6e625b;
-  --object-tools-bg: #2b2320;
-  --object-tools-hover-bg: #a14e5c;
+  --primary: #5a1a24;
+  --secondary: #c9336a;
+  --accent: #f8d7df;
+  --primary-fg: #fdf4f6;
+  --body-fg: #3a2a2e;
+  --body-bg: #fdf4f6;
+  --body-quiet-color: #745b62;
+  --body-loud-color: #5a1a24;
+  --header-color: #f8d7df;
+  --header-branding-color: #fdf4f6;
+  --header-bg: #5a1a24;
+  --header-link-color: #fdf4f6;
+  --breadcrumbs-fg: #745b62;
+  --breadcrumbs-link-fg: #5a1a24;
+  --breadcrumbs-bg: #f9e3e8;
+  --link-fg: #a8275a;
+  --link-hover-color: #c9336a;
+  --link-selected-fg: #c9336a;
+  --hairline-color: #f0d3db;
+  --border-color: #f0d3db;
+  --darkened-bg: #f9e3e8;
+  --selected-bg: #f8d7df;
+  --selected-row: #fdeef2;
+  --button-fg: #fdf4f6;
+  --button-bg: #5a1a24;
+  --button-hover-bg: #c9336a;
+  --default-button-bg: #c9336a;
+  --default-button-hover-bg: #a8275a;
+  --close-button-bg: #745b62;
+  --object-tools-bg: #5a1a24;
+  --object-tools-hover-bg: #c9336a;
   --font-family-primary: "Jost", "Helvetica Neue", Arial, sans-serif;
 }
 #header { padding: 14px 32px; }
-#site-name a, #site-name a:link, #site-name a:visited { color: #fbf7f2; font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.9rem; font-weight: 500; letter-spacing: .03em; }
-#site-name span { font-family: "Jost", sans-serif; font-size: .7rem; letter-spacing: .25em; text-transform: uppercase; color: #e4b9b9; margin-left: 6px; }
+#site-name a, #site-name a:link, #site-name a:visited { color: #fdf4f6; font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.9rem; font-weight: 500; letter-spacing: .03em; }
+#site-name span { font-family: "Jost", sans-serif; font-size: .7rem; letter-spacing: .25em; text-transform: uppercase; color: #f8d7df; margin-left: 6px; }
+#site-name a { display: inline-flex; align-items: center; gap: 10px; }
+.lr-logo { height: 46px; width: auto; }
 #user-tools { font-size: .72rem; letter-spacing: .1em; }
 h1, #content h1 { font-family: "Cormorant Garamond", Georgia, serif; font-weight: 500; font-size: 2rem; }
-.module h2, .module caption, .inline-group h2 { background: #2b2320; letter-spacing: .12em; font-weight: 500; }
+.module h2, .module caption, .inline-group h2 { background: #5a1a24; letter-spacing: .12em; font-weight: 500; }
 .module { border-radius: 10px; overflow: hidden; }
-#content-main .module { box-shadow: 0 1px 0 #e5d9cc; }
-.lr-destacado { background: #f3e1de; border-left: 4px solid #a14e5c; padding: 12px 16px; font-size: 15px; white-space: pre-line; color: #2b2320; border-radius: 4px; max-width: 640px; }
+#content-main .module { box-shadow: 0 1px 0 #f0d3db; }
+.lr-destacado { background: #f8d7df; border-left: 4px solid #c9336a; padding: 12px 16px; font-size: 15px; white-space: pre-line; color: #5a1a24; border-radius: 4px; max-width: 640px; }
 .lr-resumen { display: flex; gap: 12px; flex-wrap: wrap; margin: 0 0 20px; }
-.lr-resumen div { background: #fff; border: 1px solid #e5d9cc; border-radius: 10px; padding: 12px 18px; min-width: 120px; }
+.lr-resumen div { background: #fff; border: 1px solid #f0d3db; border-radius: 10px; padding: 12px 18px; min-width: 120px; }
 .lr-resumen strong { display: block; font-size: 1.6rem; font-family: "Cormorant Garamond", Georgia, serif; }
 .theme-toggle { display: none !important; }
 @media (prefers-color-scheme: dark) { :root { color-scheme: light; } }

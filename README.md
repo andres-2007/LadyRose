@@ -35,7 +35,7 @@ python manage.py migrate
 # 5. Crear los usuarios de la dueña y de la diseñadora de accesorios
 python manage.py crear_usuarios --clave-duena "ClaveDuena123*" --clave-disenadora "ClaveDisena123*"
 
-# 6. (Opcional) Cargar productos, colecciones, cursos y pedidos de ejemplo
+# 6. (Opcional) Cargar los productos, la galería y los cursos de Ladyrose, más pedidos de ejemplo
 python manage.py cargar_datos_demo
 
 # 7. Prender el servidor
@@ -62,7 +62,15 @@ python manage.py migrate
 python manage.py cargar_datos_demo
 ```
 
-Si quieren empezar con los datos de ejemplo limpios, borren antes el archivo `db.sqlite3` y la carpeta `media`, y repitan desde el paso 4.
+Para cambiar los datos viejos por los de Ladyrose sin borrar los usuarios:
+
+```bash
+python manage.py cargar_datos_demo --reiniciar
+```
+
+Eso borra productos, categorías, colecciones, cursos, pedidos, cotizaciones y visitas, y vuelve a cargar todo. No toca los usuarios ni la configuración de la tienda.
+
+Si quieren empezar con la base de datos totalmente limpia, borren el archivo `db.sqlite3` y la carpeta `media`, y repitan desde el paso 4.
 
 ## Pruebas
 
@@ -72,7 +80,7 @@ Cada criterio de aceptación tiene su prueba automática:
 python manage.py test
 ```
 
-Tienen que salir 102 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 102.
+Tienen que salir 106 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 106.
 
 Los nombres de las pruebas dicen la HU y el CA que revisan, por ejemplo `HU04EstadosTests.test_ca2_terminado_pasa_a_listos_para_envio`.
 
@@ -87,11 +95,19 @@ La HU 10 (aviso al cliente) y la HU 26 (enlace del curso virtual) envían correo
 3. Copiar `.env.example` como `.env` y poner `DB_ENGINE=postgres` con el usuario y la clave.
 4. Correr otra vez `python manage.py migrate` y `crear_usuarios`.
 
-En el `.env` también se cambia el número de WhatsApp, los enlaces de las redes y el texto con los datos para transferencias.
+En el `.env` también se cambia el número de WhatsApp, los enlaces de Instagram y TikTok, el correo y el texto con los datos para transferencias. Si no hay `.env`, la página usa los datos reales de Ladyrose: WhatsApp 320 764 3861, Instagram y TikTok @ladyrose.accesorios y el correo ladyrose@gmail.com.
 
-## Fotos
+## Fotos y datos de Ladyrose
 
-Las imágenes de ejemplo son ilustraciones hechas para el proyecto. La dueña las cambia por las fotos reales desde el panel (Productos, Colecciones, Cursos y Nuestra historia). Las fotos de la portada están en `static/img` y se reemplazan con otra foto del mismo nombre.
+`cargar_datos_demo` carga las fotos reales de Ladyrose (sacadas de su Instagram, en la carpeta `core/demo`):
+
+- **Catálogo:** 15 productos en 5 categorías (Pulseras, Collares, Aretes, Portagafas y Bendiciones y denarios). Los precios, tallas y materiales son una propuesta inicial que la dueña ajusta desde el panel.
+- **Galería de piezas vendidas:** 6 pedidos especiales (categoría "Pedidos especiales", que no sale en el catálogo).
+- **Cursos:** el Taller Bendición del Hogar (16 de mayo de 2026) y las dos fechas del Curso de Bisutería Básica (8 y 22 de marzo de 2025). Como ya pasaron, salen en la sección "Ya realizados" de Cursos y no reciben inscripciones. Los cursos nuevos se crean desde el panel.
+
+Siguen siendo de ejemplo (clientes inventados) los pedidos, la cotización, los inscritos y las visitas, para poder mostrar los paneles, y el texto de "Nuestra historia", que la dueña cambia desde el panel. No se cargan colecciones: la diseñadora las crea desde el panel.
+
+El logo, el ícono de la pestaña y las fotos de la portada están en `static/img` y se reemplazan con otro archivo del mismo nombre.
 
 Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la página cargan de forma diferida para que en el celular no se gasten tantos datos. Para producción se pueden guardar en la nube con cualquier almacenamiento compatible con S3 (`pip install "django-storages[s3]"` y `MEDIA_STORAGE=s3` en el `.env`).
 
@@ -154,3 +170,9 @@ git push -u origin main
 ```
 
 El `.gitignore` ya deja por fuera la base de datos, las imágenes subidas, el `.env` y el entorno virtual.
+
+## Diseño
+
+- Colores: fondos en rosa pastel (los de las fotos y el logo), botones y textos destacados en el vino del logo, y detalles (etiquetas, íconos, ofertas) en el fucsia de los volantes. Están como variables al inicio de `static/css/estilos.css`.
+- Logo: `static/img/logo-ladyrose.png` (vino) y `static/img/logo-ladyrose-claro.png` (para fondos oscuros, en el panel de producción).
+- Las fotos de los cursos son volantes verticales, así que las tarjetas y la página del curso los muestran completos, sin recortar el texto.

@@ -1,12 +1,13 @@
 """Pruebas de los criterios de aceptación de las HU 13 y 21 (Sprint 1) y 26 (Sprint 2)."""
 import threading
-from datetime import date
+from datetime import date, timedelta
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.db import connection
 from django.test import TransactionTestCase, skipUnlessDBFeature
 from django.urls import reverse
+from django.utils import timezone
 
 from core.tests_utils import PruebaConArchivos, imagen
 
@@ -17,7 +18,7 @@ def datos_curso(**extra):
     datos = dict(
         nombre="Taller Miyuki", tecnica="Tejido Miyuki", materiales_incluidos="Hilos y mostacillas",
         modalidad=Curso.Modalidad.PRESENCIAL, tipo_clase=Curso.TipoClase.GRUPAL,
-        fecha=date(2026, 11, 20), horario="9:00 a.m. a 12:00 m.", precio=120000, cupos_maximos=2,
+        fecha=timezone.localdate() + timedelta(days=30), horario="9:00 a.m. a 12:00 m.", precio=120000, cupos_maximos=2,
     )
     datos.update(extra)
     return datos
@@ -225,3 +226,37 @@ class HU26InscritosTests(PruebaConArchivos):
         curso = Curso.objects.create(publicado=True, **datos_curso(nombre="Miyuki", cupos_maximos=2))
         Inscripcion.objects.create(curso=curso, nombre="Ana", whatsapp="300", correo="a@a.co").confirmar_pago()
         self.assertEqual(len(mail.outbox), 0)
+
+
+class CursosRealizadosTests(PruebaConArchivos):
+    """Los cursos cuya fecha ya pasó se muestran en "Ya realizados" y no reciben inscripciones."""
+
+    def setUp(self):
+        hoy = timezone.localdate()
+        self.proximo = Curso.objects.create(publicado=True, **datos_curso(nombre="Taller próximo"))
+        self.pasado = Curso.objects.create(publicado=True, **datos_curso(
+            nombre="Taller pasado", fecha=hoy - timedelta(days=10)))
+        for curso in (self.proximo, self.pasado):
+            FotoCurso.objects.create(curso=curso, imagen=imagen())
+
+    def test_la_lista_separa_proximos_y_realizados(self):
+        r = self.client.get(reverse("cursos:lista"))
+        self.assertEqual(list(r.context["cursos"]), [self.proximo])
+        self.assertEqual(list(r.context["realizados"]), [self.pasado])
+        self.assertContains(r, "Ya realizados")
+
+    def test_un_curso_realizado_no_muestra_el_formulario(self):
+        r = self.client.get(self.pasado.get_absolute_url())
+        self.assertContains(r, "Este curso ya se realizó")
+        self.assertNotContains(r, "Inscribirme")
+
+    def test_un_curso_realizado_no_acepta_inscripciones(self):
+        self.client.post(self.pasado.get_absolute_url(), {
+            "nombre": "Ana Ruiz", "whatsapp": "3001234567", "correo": "ana@correo.com",
+            "curso": self.pasado.pk, "modalidad": "presencial",
+        })
+        self.assertFalse(self.pasado.inscripciones.exists())
+
+    def test_el_formulario_solo_ofrece_cursos_proximos(self):
+        from .forms import InscripcionForm
+        self.assertEqual(list(InscripcionForm().fields["curso"].queryset), [self.proximo])

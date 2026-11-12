@@ -7,10 +7,14 @@ from .models import ConfiguracionTienda, ContenidoHistoria
 
 
 def inicio(request):
+    # Se muestran los próximos cursos; si no hay, los que ya se realizaron.
+    proximos = list(Curso.objects.proximos().prefetch_related("fotos", "inscripciones")[:3])
+    cursos = proximos or list(Curso.objects.realizados().prefetch_related("fotos")[:3])
     return render(request, "core/inicio.html", {
         "productos": Producto.objects.en_venta().select_related("categoria").prefetch_related("fotos")[:8],
         "colecciones": Coleccion.objects.filter(visible=True)[:3],
-        "cursos": Curso.objects.publicados().prefetch_related("fotos", "inscripciones")[:3],
+        "cursos": cursos,
+        "cursos_son_realizados": not proximos,
         "galeria": Producto.objects.galeria().prefetch_related("fotos")[:4],
         "lema": ContenidoHistoria.LEMA,
     })

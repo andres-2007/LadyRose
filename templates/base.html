@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}Joyería artesanal hecha a mano{% endblock %} | Ladyrose</title>
   <meta name="description" content="{% block descripcion %}Bisutería artesanal hecha a mano en Cali: piezas únicas, joyas personalizadas y cursos.{% endblock %}">
-  <meta name="theme-color" content="#2b2320">
+  <meta name="theme-color" content="#f8d7df">
   {# HU 31: datos para que el enlace compartido muestre foto y nombre en redes #}
   <meta property="og:site_name" content="Ladyrose">
   <meta property="og:type" content="website">
@@ -14,7 +14,8 @@
   <meta property="og:description" content="{% block og_descripcion %}Bisutería artesanal hecha a mano en Cali.{% endblock %}">
   <meta property="og:url" content="{{ request.build_absolute_uri }}">
   {% block og_imagen %}{% endblock %}
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='16' fill='%232b2320'/%3E%3Ctext x='16' y='22' font-family='Georgia' font-size='17' fill='%23fbf7f2' text-anchor='middle'%3EL%3C/text%3E%3C/svg%3E">
+  <link rel="icon" type="image/png" href="{% static 'img/favicon.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'img/apple-touch-icon.png' %}">
   <link rel="preload" href="{% static 'fonts/cormorant-garamond-latin-500-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="preload" href="{% static 'fonts/jost-latin-400-normal.woff2' %}" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="{% static 'css/estilos.css' %}">
@@ -31,8 +32,7 @@
         <span></span><span></span><span></span>
       </button>
       <a href="{% url 'core:inicio' %}" class="marca" aria-label="Ladyrose, inicio">
-        <svg class="marca__simbolo" aria-hidden="true"><use href="#i-rosa"/></svg>
-        <span class="marca__nombre">Ladyrose</span>
+        <img class="marca__logo" src="{% static 'img/logo-ladyrose.png' %}" alt="Ladyrose Accesorios" width="317" height="240">
       </a>
       <a href="{% url 'pedidos:carrito' %}" class="icono-boton" style="justify-self:end" aria-label="Carrito, {{ CANTIDAD_CARRITO }} productos">
         <svg aria-hidden="true"><use href="#i-bolsa"/></svg>
@@ -54,6 +54,7 @@
       <div class="menu__extra">
         <a href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
         <a href="{{ LADYROSE.INSTAGRAM }}" target="_blank" rel="noopener">Instagram</a>
+        <a href="{{ LADYROSE.TIKTOK }}" target="_blank" rel="noopener">TikTok</a>
       </div>
     </nav>
     <div class="velo" data-velo></div>
@@ -76,14 +77,12 @@
     <div class="contenedor">
       <div class="pie__rejilla">
         <div>
-          <a href="{% url 'core:inicio' %}" class="marca">
-            <svg class="marca__simbolo" aria-hidden="true"><use href="#i-rosa"/></svg>
-            <span class="marca__nombre">Ladyrose</span>
+          <a href="{% url 'core:inicio' %}" class="marca" aria-label="Ladyrose, inicio">
+            <img class="marca__logo" src="{% static 'img/logo-ladyrose.png' %}" alt="Ladyrose Accesorios" width="317" height="240" loading="lazy">
           </a>
           <p>Bisutería artesanal hecha a mano en {{ LADYROSE.CIUDAD }}. Cada pieza lleva tiempo, cariño y una historia.</p>
           <div class="pie__redes">
             <a href="{{ LADYROSE.INSTAGRAM }}" target="_blank" rel="noopener">Instagram</a>
-            <a href="{{ LADYROSE.FACEBOOK }}" target="_blank" rel="noopener">Facebook</a>
             <a href="{{ LADYROSE.TIKTOK }}" target="_blank" rel="noopener">TikTok</a>
             <a href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener">WhatsApp</a>
           </div>
