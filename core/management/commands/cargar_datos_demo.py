@@ -25,7 +25,7 @@ from catalogo.models import Categoria, Coleccion, FotoProducto, Producto, TallaP
 from core.models import ContenidoHistoria, FotoTaller, VisitaOrigen
 from cotizaciones.models import SolicitudCotizacion
 from cursos.models import Curso, FotoCurso, Inscripcion
-from pedidos.models import DetallePedido, Pedido, TipoEmpaque
+from pedidos.models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
 DEMO = Path(__file__).resolve().parents[2] / "demo"
 
@@ -179,6 +179,17 @@ GALERIA = [
      "persona favorita\". Con amigas todo es mejor."),
 ]
 
+# HU 07: tiempos de envío por ciudad (propuesta inicial; la dueña los ajusta en el panel).
+# Cali la crea la migración de pedidos: la entrega Ladyrose directamente, sin transportadora.
+# ciudad, mínimo, máximo (días hábiles), por transportadora
+TIEMPOS_ENVIO = [
+    ("Jamundí", 1, 3, True),
+    ("Palmira", 1, 3, True),
+    ("Yumbo", 1, 3, True),
+    ("Bogotá", 2, 4, True),
+    ("Medellín", 2, 4, True),
+]
+
 EMPAQUES = [
     ("Caja de regalo con cinta", "Caja rígida con cinta de satín rosa", 8000),
     ("Bolsa de regalo", "Bolsa de papel con papel seda y sticker de Ladyrose", 5000),
@@ -236,6 +247,11 @@ class Command(BaseCommand):
         for nombre, imagen, precio, tecnica, material, descripcion in GALERIA:
             self._producto(nombre, "Pedidos especiales", imagen, precio, tecnica, material, "", 5, [],
                            "", descripcion, unica=True, vendida=True)
+
+        for ciudad, minimo, maximo, transportadora in TIEMPOS_ENVIO:
+            if not TiempoEnvio.objects.filter(ciudad=ciudad).exists():
+                TiempoEnvio.objects.create(ciudad=ciudad, dias_min=minimo, dias_max=maximo,
+                                           por_transportadora=transportadora)
 
         for i, (nombre, descripcion, costo) in enumerate(EMPAQUES):
             TipoEmpaque.objects.get_or_create(nombre=nombre, defaults={"descripcion": descripcion, "costo": costo,
@@ -297,6 +313,8 @@ class Command(BaseCommand):
         p, creado = Producto.objects.get_or_create(nombre=nombre, defaults={
             "categoria": categoria, "precio": precio, "descripcion": descripcion, "tecnica": tecnica,
             "material": material, "colores": colores, "dias_elaboracion": dias,
+            # HU 07: el mínimo es un día menos que el máximo (ej. "De 2 a 3 días hábiles")
+            "dias_fabricacion_min": max(1, dias - 1),
             "instrucciones_cuidado": cuidado, "pieza_unica": unica, "vendida": vendida,
         })
         if creado:

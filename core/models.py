@@ -37,7 +37,20 @@ class ConfiguracionTienda(ModeloUnico):
         validators=[MinValueValidator(Decimal("1"), message="El monto debe ser mayor a cero.")],
         help_text="Valor en pesos. Aplica a los pedidos mayoristas que se creen después de guardarlo.",
     )
+    # HU 07: tiempo de envío para las ciudades que no están en la tabla de tiempos de envío
+    envio_otras_ciudades_min = models.PositiveSmallIntegerField(
+        "Envío a otras ciudades: mínimo", default=3,
+        help_text="Días hábiles que tarda la transportadora a una ciudad que no está en la tabla de tiempos de envío.",
+    )
+    envio_otras_ciudades_max = models.PositiveSmallIntegerField(
+        "Envío a otras ciudades: máximo", default=6, help_text="Días hábiles.",
+    )
     actualizado = models.DateTimeField("Última actualización", auto_now=True)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+        if self.envio_otras_ciudades_min > self.envio_otras_ciudades_max:
+            raise ValidationError({"envio_otras_ciudades_min": "El mínimo no puede ser mayor que el máximo."})
 
     class Meta:
         verbose_name = "configuración de la tienda"

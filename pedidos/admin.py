@@ -4,7 +4,7 @@ from django.utils.html import format_html
 
 from core.templatetags.ladyrose import pesos
 
-from .models import DetallePedido, Pedido, TipoEmpaque
+from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
 
 @admin.register(TipoEmpaque)
@@ -13,6 +13,19 @@ class TipoEmpaqueAdmin(admin.ModelAdmin):
 
     list_display = ("nombre", "descripcion", "costo", "activo", "orden")
     list_editable = ("costo", "activo", "orden")
+
+
+@admin.register(TiempoEnvio)
+class TiempoEnvioAdmin(admin.ModelAdmin):
+    """HU 07: tabla de tiempos de envío por ciudad que administra la dueña.
+
+    Las ciudades que no estén aquí usan el tiempo de "otras ciudades" de la
+    configuración de la tienda.
+    """
+
+    list_display = ("ciudad", "dias_min", "dias_max", "por_transportadora")
+    list_editable = ("dias_min", "dias_max", "por_transportadora")
+    search_fields = ("ciudad",)
 
 
 class DetallePedidoInline(admin.TabularInline):

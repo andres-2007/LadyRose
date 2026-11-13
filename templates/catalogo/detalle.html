@@ -53,7 +53,15 @@
         <div class="ficha__datos">
           {% if producto.material %}<span><strong>Material:</strong> {{ producto.material }}</span>{% endif %}
           {% if producto.tecnica %}<span><strong>Técnica:</strong> {{ producto.tecnica }}</span>{% endif %}
-          <span><strong>Lista en:</strong> {{ producto.dias_elaboracion }} día{{ producto.dias_elaboracion|pluralize }} hábil{{ producto.dias_elaboracion|pluralize:"es" }}</span>
+        </div>
+
+        {# HU 07 CA 1: tiempo de fabricación definido para este producto #}
+        <div class="tiempo-fabricacion">
+          <svg aria-hidden="true"><use href="#i-calendario"/></svg>
+          <div>
+            <strong>Tiempo de fabricación:</strong> {{ producto.tiempo_fabricacion }}
+            <span>Lo hacemos a mano después de tu compra. El tiempo de envío lo ves al escribir tu ciudad en el pago.</span>
+          </div>
         </div>
 
         <form method="post" action="{% url 'pedidos:agregar' producto.pk %}" data-form-compra novalidate>
