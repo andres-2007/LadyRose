@@ -7,7 +7,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from core.roles import GRUPO_DISENADORA, GRUPO_DUENA, crear_roles
-from core.tests_utils import PruebaConArchivos, imagen
+from core.tests_utils import PruebaConArchivos, imagen, iniciar_sesion_cliente
 
 from .models import AVISO_CUIDADOS, TEXTO_PH, Categoria, Coleccion, FotoProducto, Producto, TallaProducto
 
@@ -84,7 +84,7 @@ class HU15AdministracionCatalogoTests(BaseCatalogo):
             "nombre": "Aretes luna", "categoria": self.categoria.pk, "descripcion": "", "precio": "30000",
             "visible": "on", "precio_oferta": "", "oferta_inicio": "", "oferta_fin": "",
             "instrucciones_cuidado": "", "material": "", "colores": "", "tecnica": "",
-            "dias_elaboracion": "3",
+            "dias_fabricacion_min": "2", "dias_elaboracion": "3",
             "fotos-TOTAL_FORMS": "1", "fotos-INITIAL_FORMS": "0",
             "fotos-0-imagen": imagen(), "fotos-0-orden": "0",
             "tallas-TOTAL_FORMS": "0", "tallas-INITIAL_FORMS": "0",
@@ -149,6 +149,7 @@ class HU08GaleriaTests(BaseCatalogo):
         super().setUp()
         self.unica = Producto.objects.create(nombre="Collar Árbol", categoria=self.categoria, precio=95000,
                                              pieza_unica=True)
+        iniciar_sesion_cliente(self)  # HU 27: para comprar hay que tener cuenta
 
     def test_ca1_al_venderse_pasa_a_la_galeria_en_vez_de_desaparecer(self):
         self.client.post(reverse("pedidos:agregar", args=[self.unica.pk]))

@@ -49,3 +49,17 @@ h1, #content h1 { font-family: "Cormorant Garamond", Georgia, serif; font-weight
 .lr-resumen strong { display: block; font-size: 1.6rem; font-family: "Cormorant Garamond", Georgia, serif; }
 .theme-toggle { display: none !important; }
 @media (prefers-color-scheme: dark) { :root { color-scheme: light; } }
+/* HU 27: clientes y códigos de descuento */
+.lr-resumen a { background: #fff; border: 1px solid #f0d3db; border-radius: 10px; padding: 12px 18px; min-width: 120px; text-decoration: none; color: #3a2a2e; }
+.lr-resumen a:hover { border-color: #c9336a; }
+.lr-cumple { color: #c9336a; }
+.lr-envio { max-width: 720px; }
+.lr-mensaje { white-space: pre-wrap; font-family: inherit; font-size: .95rem; background: #fff; border: 1px solid #f0d3db; border-left: 3px solid #e0457b; border-radius: 6px; padding: 14px 16px; }
+.lr-envio__botones { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+.lr-ayuda { color: #745b62; font-size: .85rem; }
+/* HU 28: seguimiento de consultas */
+.lr-atrasada { display: inline-block; background: #e0457b; color: #fff; font-size: .72rem; font-weight: 600; letter-spacing: .03em; padding: 3px 8px; border-radius: 999px; white-space: nowrap; }
+#result_list tr.lr-fila-atrasada td, #result_list tr.lr-fila-atrasada th { background: #fbd3e0 !important; }
+#result_list tr.lr-fila-atrasada td:first-child { box-shadow: inset 4px 0 0 #e0457b; }
+.lr-boton-wa { white-space: nowrap; }
+.lr-resumen a.lr-resumen--alerta { border-color: #e0457b; color: #c9336a; }

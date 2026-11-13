@@ -34,10 +34,18 @@
       <a href="{% url 'core:inicio' %}" class="marca" aria-label="Ladyrose, inicio">
         <img class="marca__logo" src="{% static 'img/logo-ladyrose.png' %}" alt="Ladyrose Accesorios" width="317" height="240">
       </a>
-      <a href="{% url 'pedidos:carrito' %}" class="icono-boton" style="justify-self:end" aria-label="Carrito, {{ CANTIDAD_CARRITO }} productos">
-        <svg aria-hidden="true"><use href="#i-bolsa"/></svg>
-        {% if CANTIDAD_CARRITO %}<span class="carrito-burbuja">{{ CANTIDAD_CARRITO }}</span>{% endif %}
-      </a>
+      <div class="encabezado__acciones">
+        {# HU 27: cuenta del cliente #}
+        {% if user.is_authenticated %}
+          <a href="{% url 'clientes:mi_cuenta' %}" class="icono-boton" aria-label="Mi cuenta"><svg aria-hidden="true"><use href="#i-usuario"/></svg></a>
+        {% else %}
+          <a href="{% url 'clientes:ingresar' %}" class="icono-boton" aria-label="Iniciar sesión"><svg aria-hidden="true"><use href="#i-usuario"/></svg></a>
+        {% endif %}
+        <a href="{% url 'pedidos:carrito' %}" class="icono-boton" aria-label="Carrito, {{ CANTIDAD_CARRITO }} productos">
+          <svg aria-hidden="true"><use href="#i-bolsa"/></svg>
+          {% if CANTIDAD_CARRITO %}<span class="carrito-burbuja">{{ CANTIDAD_CARRITO }}</span>{% endif %}
+        </a>
+      </div>
     </div>
     <nav id="menu-principal" class="menu" aria-label="Menú principal">
       <button class="menu__cerrar" type="button" data-cerrar-menu aria-label="Cerrar menú">&times;</button>
@@ -55,6 +63,7 @@
         <a href="https://wa.me/{{ LADYROSE.WHATSAPP }}" target="_blank" rel="noopener">Escríbenos por WhatsApp</a>
         <a href="{{ LADYROSE.INSTAGRAM }}" target="_blank" rel="noopener">Instagram</a>
         <a href="{{ LADYROSE.TIKTOK }}" target="_blank" rel="noopener">TikTok</a>
+        {% if user.is_authenticated %}<a href="{% url 'clientes:mi_cuenta' %}">Mi cuenta</a>{% else %}<a href="{% url 'clientes:ingresar' %}">Iniciar sesión</a>{% endif %}
       </div>
     </nav>
     <div class="velo" data-velo></div>

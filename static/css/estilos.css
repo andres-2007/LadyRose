@@ -118,6 +118,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
   background: none; border: 0; cursor: pointer; color: var(--tinta); text-decoration: none; padding: 0;
 }
 .icono-boton svg { width: 22px; height: 22px; }
+.encabezado__acciones { justify-self: end; display: flex; align-items: center; gap: 2px; }
 .carrito-burbuja {
   position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; background: var(--fucsia); color: #fff; font-size: .66rem; font-weight: 600;
@@ -342,7 +343,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .campo > label, .campo__etiqueta { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
 .campo__ayuda { font-size: .8rem; color: var(--tinta-suave); }
 .campo input[type="text"], .campo input[type="email"], .campo input[type="tel"], .campo input[type="number"],
-.campo input[type="url"], .campo textarea, .campo select {
+.campo input[type="url"], .campo input[type="password"], .campo input[type="date"], .campo textarea, .campo select {
   width: 100%; padding: 13px 14px; border: 1px solid var(--linea); border-radius: var(--radio);
   background: var(--crema); transition: border-color .2s, background .2s; font-size: 1rem;
 }
@@ -423,6 +424,21 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 
 /* ---------- Galería de piezas vendidas (HU 08) ---------- */
 .galeria-aviso { max-width: 640px; margin: 0 auto 32px; text-align: center; }
+
+/* ---------- HU 07: tiempo de fabricación y entrega estimada ---------- */
+.tiempo-fabricacion { display: flex; gap: 12px; align-items: flex-start; background: var(--arena); border-radius: var(--radio); padding: 12px 14px; margin-bottom: 20px; font-size: .9rem; }
+.tiempo-fabricacion svg, .entrega-estimada h3 svg { width: 22px; height: 22px; flex: none; color: var(--fucsia); }
+.tiempo-fabricacion strong { font-weight: 500; color: var(--tinta); }
+.tiempo-fabricacion span { display: block; color: var(--tinta-suave); font-size: .82rem; margin-top: 2px; }
+.entrega-estimada { background: var(--blanco); border: 1px solid var(--arena-oscura); border-left: 3px solid var(--fucsia); border-radius: var(--radio); padding: 16px 18px; }
+.entrega-estimada h3 { display: flex; align-items: center; gap: 10px; font-size: 1.25rem; margin-bottom: 10px; }
+.entrega-estimada__tiempos { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 0 0 12px; }
+.entrega-estimada__tiempos dt { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: var(--tinta-suave); }
+.entrega-estimada__tiempos dd { margin: 2px 0 0; font-weight: 500; color: var(--tinta); }
+.entrega-estimada__mensaje { margin: 0 0 8px; padding: 10px 12px; background: var(--blush); border-radius: var(--radio); color: var(--tinta); font-weight: 500; }
+.entrega-estimada__aviso { margin: 0 0 8px; font-size: .84rem; color: var(--texto); }
+.entrega-estimada__nota { margin: 0; font-size: .78rem; color: var(--tinta-suave); }
+@media (min-width: 600px) { .entrega-estimada__tiempos { grid-template-columns: 1fr 1fr; } }
 
 /* ---------- Historia (HU 18) ---------- */
 .historia { display: grid; gap: 32px; align-items: start; padding-bottom: 56px; }
@@ -611,3 +627,32 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 
 /* La casilla dentro de un campo no lleva el estilo de etiqueta en mayúsculas */
 .campo > label.casilla { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .94rem; }
+
+/* ---------- HU 27: cuenta del cliente y códigos de descuento ---------- */
+.cuenta-pagina { padding-bottom: 64px; }
+.cuenta-pagina > .bloque-form { margin-bottom: 18px; }
+.cuenta-pagina--corta { max-width: 480px; }
+.cuenta-pagina .bloque-form h2 { font-size: 1.6rem; }
+.cuenta-pagina > form > .centrado, .cuenta-pagina .formulario > .centrado { margin: 4px 0 0; }
+.codigos { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+.codigo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 14px; border: 1px dashed var(--fucsia); border-radius: var(--radio); background: var(--blush); }
+.codigo__texto { font-family: var(--sans); font-weight: 600; letter-spacing: .08em; color: var(--tinta); background: var(--blanco); padding: 4px 10px; border-radius: var(--radio); }
+.descuento-pago { display: flex; gap: 8px; }
+.descuento-pago input { flex: 1; text-transform: uppercase; }
+.descuento-pago .boton { min-height: 46px; padding: 0 18px; }
+.descuento-pago__mensaje { margin: 8px 0 0; font-size: .86rem; }
+.descuento-pago__mensaje--ok { color: var(--exito); }
+.descuento-pago__mensaje--error { color: var(--error); }
+.resumen__fila--descuento span:last-child { color: var(--exito); font-weight: 500; }
+.aviso-cuenta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+
+/* ---------- HU 28: formulario "Pregúntanos" ---------- */
+.preguntanos { margin: 24px 0; border: 1px solid var(--arena-oscura); border-radius: var(--radio); background: var(--blanco); }
+.preguntanos summary { cursor: pointer; list-style: none; display: flex; align-items: center; gap: 10px; padding: 14px 16px; font-weight: 500; color: var(--tinta); }
+.preguntanos summary::-webkit-details-marker { display: none; }
+.preguntanos summary::after { content: "+"; margin-left: auto; font-size: 1.3rem; color: var(--fucsia); }
+.preguntanos[open] summary::after { content: "–"; }
+.preguntanos summary svg { width: 20px; height: 20px; color: var(--fucsia); flex: none; }
+.preguntanos__form { display: grid; gap: 12px; padding: 0 16px 16px; }
+.preguntanos__form .boton { justify-self: start; }

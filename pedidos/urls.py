@@ -10,6 +10,8 @@ urlpatterns = [
     path("carrito/actualizar/", views.actualizar, name="actualizar"),
     path("carrito/quitar/", views.quitar, name="quitar"),
     path("pagar/", views.pagar, name="pagar"),
+    path("pagar/tiempo-de-entrega/", views.estimar, name="estimar_entrega"),
+    path("pagar/codigo/", views.aplicar_codigo, name="aplicar_codigo"),
     path("pedido/<int:pk>/confirmado/", views.confirmado, name="confirmado"),
     # Panel de producción
     path("panel/pedidos/", views.panel, name="panel"),

@@ -9,7 +9,7 @@ from django.test import TransactionTestCase, skipUnlessDBFeature
 from django.urls import reverse
 from django.utils import timezone
 
-from core.tests_utils import PruebaConArchivos, imagen
+from core.tests_utils import PruebaConArchivos, imagen, iniciar_sesion_cliente
 
 from .models import Curso, CursoAgotado, FotoCurso, Inscripcion
 
@@ -73,6 +73,7 @@ class HU13InformacionCursoTests(PruebaConArchivos):
 class HU21CuposTests(PruebaConArchivos):
     def setUp(self):
         self.curso = Curso.objects.create(publicado=True, **datos_curso(cupos_maximos=2))
+        iniciar_sesion_cliente(self)  # HU 27: para inscribirse hay que tener cuenta
 
     def inscribir(self, nombre):
         return Inscripcion.objects.create(curso=self.curso, nombre=nombre, whatsapp="3001234567",
@@ -161,6 +162,7 @@ class HU26InscritosTests(PruebaConArchivos):
             nombre="Alambrismo", modalidad=Curso.Modalidad.VIRTUAL, cupos_maximos=3,
             enlace_conexion="https://meet.google.com/abc-defg-hij"))
         self.admin = User.objects.create_superuser("admin", "a@a.co", "x")
+        iniciar_sesion_cliente(self)  # HU 27: para inscribirse hay que tener cuenta
 
     def test_ca1_el_formulario_pide_nombre_whatsapp_correo_curso_y_modalidad(self):
         r = self.client.get(self.curso.get_absolute_url())

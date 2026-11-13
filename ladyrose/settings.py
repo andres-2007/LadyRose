@@ -43,6 +43,8 @@ INSTALLED_APPS = [
     "cursos",
     "cotizaciones",
     "pedidos",
+    "clientes",  # HU 27: cuentas de cliente y códigos de descuento
+    "consultas",  # HU 28: seguimiento de clientes potenciales
 ]
 
 MIDDLEWARE = [

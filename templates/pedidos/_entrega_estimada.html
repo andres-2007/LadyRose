@@ -1,0 +1,21 @@
+{# HU 07: tiempo de fabricación, tiempo de envío según la ciudad y fechas estimadas de entrega. #}
+{# static/js/main.js lo actualiza cada vez que el cliente escribe la ciudad. #}
+<div class="entrega-estimada ancho" data-entrega data-url="{% url 'pedidos:estimar_entrega' %}" aria-live="polite">
+  <h3><svg aria-hidden="true"><use href="#i-calendario"/></svg>¿Cuándo te llega?</h3>
+  <dl class="entrega-estimada__tiempos">
+    <div>
+      <dt>Tiempo de fabricación</dt>
+      <dd data-entrega-fabricacion>{{ estimado.tiempo_fabricacion|default:tiempo_fabricacion_carrito }}</dd>
+    </div>
+    <div>
+      <dt>Tiempo estimado de envío <span data-entrega-ciudad>{% if estimado %}a {{ estimado.ciudad }}{% endif %}</span></dt>
+      <dd data-entrega-envio>{% if estimado %}{{ estimado.tiempo_envio }}{% else %}Escribe tu ciudad para calcularlo{% endif %}</dd>
+    </div>
+  </dl>
+  <p class="entrega-estimada__mensaje" data-entrega-mensaje {% if not estimado %}hidden{% endif %}>{{ estimado.mensaje }}</p>
+  <p class="entrega-estimada__aviso" data-entrega-aviso {% if not estimado.aviso %}hidden{% endif %}>{{ estimado.aviso }}</p>
+  <p class="entrega-estimada__nota">Contamos solo días hábiles: sin sábados, domingos ni festivos.</p>
+</div>
+{% if ciudades_envio %}
+<datalist id="ciudades-envio">{% for c in ciudades_envio %}<option value="{{ c }}">{% endfor %}</datalist>
+{% endif %}

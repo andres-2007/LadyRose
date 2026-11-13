@@ -37,6 +37,7 @@
           {% include "partials/campo.html" with campo=form.direccion clase="ancho" %}
           {% include "partials/campo.html" with campo=form.barrio %}
           {% include "partials/campo.html" with campo=form.ciudad %}
+          {% include "pedidos/_entrega_estimada.html" %}
           {% include "partials/campo.html" with campo=form.indicaciones clase="ancho" %}
           <label class="casilla casilla--destacada ancho">{{ form.enviar_a_otra_persona }}
             <span><strong>Es un regalo: enviarlo a otra persona</strong><br><span class="texto-suave">Lo llevamos directo a quien lo va a recibir.</span></span>
@@ -72,9 +73,27 @@
         </div>
       </section>
 
-      {# ---- 4. Pago (HU 24) ---- #}
+      {# ---- 4. Código de descuento (HU 27) ---- #}
       <section class="bloque-form">
-        <h2><span class="bloque-form__numero">4</span>Forma de pago</h2>
+        <h2><span class="bloque-form__numero">4</span>Código de descuento</h2>
+        <p>Si Ladyrose te envió un código, escríbelo aquí. Lo ves también en <a href="{% url 'clientes:mi_cuenta' %}" target="_blank">Mi cuenta</a>.</p>
+        <div class="campo {% if form.codigo.errors %}campo--error{% endif %}" data-descuento data-url="{% url 'pedidos:aplicar_codigo' %}">
+          <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
+          <div class="descuento-pago">
+            {{ form.codigo }}
+            <button class="boton boton--borde" type="button" data-aplicar-codigo>Aplicar</button>
+          </div>
+          {% if form.codigo.errors %}
+            <ul class="errores" data-descuento-mensaje>{% for e in form.codigo.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% else %}
+            <p class="descuento-pago__mensaje descuento-pago__mensaje--ok" data-descuento-mensaje {% if not descuento %}hidden{% endif %}>{% if descuento %}Código aplicado: {{ descuento|pesos }} menos en tus productos.{% endif %}</p>
+          {% endif %}
+        </div>
+      </section>
+
+      {# ---- 5. Pago (HU 24) ---- #}
+      <section class="bloque-form">
+        <h2><span class="bloque-form__numero">5</span>Forma de pago</h2>
         <div class="campos">
           <div class="campo {% if form.metodo_pago.errors %}campo--error{% endif %}">
             <div class="radios">
@@ -113,9 +132,10 @@
         </div>
       {% endfor %}
       <div class="resumen__fila" style="border-top:1px solid var(--linea);margin-top:8px;padding-top:14px"><span>Subtotal</span><span>{{ subtotal|pesos }}</span></div>
+      <div class="resumen__fila resumen__fila--descuento {% if not descuento %}oculto{% endif %}" data-fila-descuento><span>Descuento</span><span>- {{ descuento|pesos }}</span></div>
       <div class="resumen__fila oculto" data-fila-empaque><span>Empaque de regalo</span><span></span></div>
       <div class="resumen__fila"><span>Envío</span><span class="texto-suave">Se acuerda al despachar</span></div>
-      <div class="resumen__fila resumen__fila--total"><span>Total</span><span data-total data-subtotal="{{ subtotal|floatformat:0 }}">{{ subtotal|pesos }}</span></div>
+      <div class="resumen__fila resumen__fila--total"><span>Total</span><span data-total data-subtotal="{{ subtotal|floatformat:0 }}" data-descuento="{{ descuento|floatformat:0 }}">{{ subtotal|pesos }}</span></div>
     </aside>
   </div>
 </div>

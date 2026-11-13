@@ -23,10 +23,6 @@ class SolicitudCotizacion(models.Model):
         # HU 08: pieza inspirada en una de la galería de piezas vendidas
         INSPIRADA = "inspirada", "Inspirada en una pieza de la galería"
 
-    class Estado(models.TextChoices):
-        NUEVA = "nueva", "Nueva"
-        RESPONDIDA = "respondida", "Respondida"
-
     tipo = models.CharField("Tipo", max_length=20, choices=Tipo.choices, default=Tipo.PERSONALIZADA)
     nombre = models.CharField("Nombre", max_length=150)
     whatsapp = models.CharField("WhatsApp", max_length=20)
@@ -49,7 +45,7 @@ class SolicitudCotizacion(models.Model):
     acepta_pieza_unica = models.BooleanField("Aceptó el aviso de pieza única", default=False)
     fecha_aceptacion = models.DateTimeField("Fecha de aceptación del aviso", null=True, blank=True)
 
-    estado = models.CharField("Estado", max_length=20, choices=Estado.choices, default=Estado.NUEVA)
+    # El seguimiento (Nueva, Contactada, Compró o Descartada) está en la consulta de la HU 28
     fecha = models.DateTimeField("Fecha", auto_now_add=True)
 
     class Meta:

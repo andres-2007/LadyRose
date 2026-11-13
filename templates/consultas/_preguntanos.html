@@ -1,0 +1,14 @@
+{# HU 28: la pregunta queda registrada para que la dueña le haga seguimiento #}
+<details class="preguntanos" id="preguntanos" {% if abierto %}open{% endif %}>
+  <summary><svg aria-hidden="true"><use href="#i-chat"/></svg> ¿Tienes una pregunta sobre {{ objeto.nombre }}?</summary>
+  <form method="post" action="{{ accion }}" class="preguntanos__form" novalidate>
+    <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+    <p class="campo__ayuda">Déjanos tu pregunta y te respondemos por WhatsApp en menos de {{ LADYROSE.TIEMPO_RESPUESTA }}.</p>
+    <div class="campos dos-columnas">
+      {% include "partials/campo.html" with campo=form.nombre %}
+      {% include "partials/campo.html" with campo=form.whatsapp %}
+      {% include "partials/campo.html" with campo=form.mensaje clase="ancho" %}
+    </div>
+    <button class="boton boton--borde" type="submit">Enviar pregunta</button>
+  </form>
+</details>
