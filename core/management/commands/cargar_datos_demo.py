@@ -11,7 +11,7 @@ diseñadora los ajustan desde el panel.
 Los pedidos, la cotización, los inscritos y las visitas son de ejemplo (clientes
 inventados) para poder mostrar el panel de producción y el panel de la dueña.
 """
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from pathlib import Path
 
@@ -21,11 +21,14 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from django.contrib.auth import get_user_model
+
 from catalogo.models import Categoria, Coleccion, FotoProducto, Producto, TallaProducto
+from clientes.models import Cliente, CodigoDescuento
 from core.models import ContenidoHistoria, FotoTaller, VisitaOrigen
 from cotizaciones.models import SolicitudCotizacion
 from cursos.models import Curso, FotoCurso, Inscripcion
-from pedidos.models import DetallePedido, Pedido, TipoEmpaque
+from pedidos.models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
 DEMO = Path(__file__).resolve().parents[2] / "demo"
 
@@ -179,6 +182,17 @@ GALERIA = [
      "persona favorita\". Con amigas todo es mejor."),
 ]
 
+# HU 07: tiempos de envío por ciudad (propuesta inicial; la dueña los ajusta en el panel).
+# Cali la crea la migración de pedidos: la entrega Ladyrose directamente, sin transportadora.
+# ciudad, mínimo, máximo (días hábiles), por transportadora
+TIEMPOS_ENVIO = [
+    ("Jamundí", 1, 3, True),
+    ("Palmira", 1, 3, True),
+    ("Yumbo", 1, 3, True),
+    ("Bogotá", 2, 4, True),
+    ("Medellín", 2, 4, True),
+]
+
 EMPAQUES = [
     ("Caja de regalo con cinta", "Caja rígida con cinta de satín rosa", 8000),
     ("Bolsa de regalo", "Bolsa de papel con papel seda y sticker de Ladyrose", 5000),
@@ -212,6 +226,18 @@ CURSOS = [
 ]
 
 
+# HU 27: clientes de ejemplo (inventados) para mostrar el panel de cumpleaños y descuentos.
+# Todos tienen la contraseña CLAVE_CLIENTES_DEMO.
+CLAVE_CLIENTES_DEMO = "Cliente123*"
+# nombre, correo, WhatsApp, días que faltan para su cumpleaños (None = no lo dejó)
+CLIENTES_DEMO = [
+    ("Mariana López", "mariana@correo.com", "3001234567", 3),
+    ("Sofía Cárdenas", "sofia@correo.com", "", None),
+    ("Valentina Ríos", "valentina@correo.com", "3112223344", 6),
+    ("Daniela Mejía", "daniela@correo.com", "3123334455", 40),
+]
+
+
 class Command(BaseCommand):
     help = "Carga los productos, la galería y los cursos de Ladyrose, más pedidos de ejemplo."
 
@@ -236,6 +262,11 @@ class Command(BaseCommand):
         for nombre, imagen, precio, tecnica, material, descripcion in GALERIA:
             self._producto(nombre, "Pedidos especiales", imagen, precio, tecnica, material, "", 5, [],
                            "", descripcion, unica=True, vendida=True)
+
+        for ciudad, minimo, maximo, transportadora in TIEMPOS_ENVIO:
+            if not TiempoEnvio.objects.filter(ciudad=ciudad).exists():
+                TiempoEnvio.objects.create(ciudad=ciudad, dias_min=minimo, dias_max=maximo,
+                                           por_transportadora=transportadora)
 
         for i, (nombre, descripcion, costo) in enumerate(EMPAQUES):
             TipoEmpaque.objects.get_or_create(nombre=nombre, defaults={"descripcion": descripcion, "costo": costo,
@@ -267,6 +298,7 @@ class Command(BaseCommand):
 
         self._historia()
         self._pedidos(productos)
+        self._clientes()
 
         if not VisitaOrigen.objects.exists():
             for canal, n in [("instagram", 14), ("whatsapp", 8), ("tiktok", 6), ("directo", 9)]:
@@ -277,6 +309,8 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------
     def _borrar(self):
+        # Solo se borran las cuentas de ejemplo, nunca las de clientes reales
+        get_user_model().objects.filter(email__in=[c[1] for c in CLIENTES_DEMO], is_staff=False).delete()
         Pedido.objects.all().delete()
         SolicitudCotizacion.objects.all().delete()
         Curso.objects.all().delete()  # también borra fotos e inscripciones
@@ -297,6 +331,8 @@ class Command(BaseCommand):
         p, creado = Producto.objects.get_or_create(nombre=nombre, defaults={
             "categoria": categoria, "precio": precio, "descripcion": descripcion, "tecnica": tecnica,
             "material": material, "colores": colores, "dias_elaboracion": dias,
+            # HU 07: el mínimo es un día menos que el máximo (ej. "De 2 a 3 días hábiles")
+            "dias_fabricacion_min": max(1, dias - 1),
             "instrucciones_cuidado": cuidado, "pieza_unica": unica, "vendida": vendida,
         })
         if creado:
@@ -323,6 +359,24 @@ class Command(BaseCommand):
                               ("duo-escapulario", "Cada pieza llega lista para regalar"),
                               ("pulseras-persona-favorita", "Detalles para las personas favoritas")]:
             FotoTaller.objects.create(historia=historia, imagen=archivo(imagen), descripcion=texto)
+
+    def _clientes(self):
+        """HU 27: cuentas de ejemplo, ligadas a los pedidos de ejemplo con el mismo correo."""
+        User = get_user_model()
+        hoy = timezone.localdate()
+        for nombre, correo, whatsapp, dias in CLIENTES_DEMO:
+            if User.objects.filter(username=correo).exists():
+                continue
+            usuario = User.objects.create_user(username=correo, email=correo, password=CLAVE_CLIENTES_DEMO,
+                                               first_name=nombre)
+            cumple = (hoy + timedelta(days=dias)).replace(year=1995) if dias is not None else None
+            cliente = Cliente.objects.create(usuario=usuario, whatsapp=whatsapp, cumpleanos=cumple)
+            Pedido.objects.filter(correo__iexact=correo, cliente=None).update(cliente=usuario)
+            if correo == "mariana@correo.com":
+                CodigoDescuento.objects.create(
+                    cliente=cliente, motivo=CodigoDescuento.Motivo.CUMPLEANOS, codigo="CUMPLE-MARIANA-DEMO",
+                    tipo=CodigoDescuento.Tipo.PORCENTAJE, valor=15, vence=hoy + timedelta(days=20),
+                )
 
     def _pedidos(self, productos):
         if Pedido.objects.exists():

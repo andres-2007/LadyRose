@@ -54,6 +54,13 @@
         {% elif curso.agotado %}
           <p>Este curso ya no tiene cupos. Escríbenos y te avisamos cuando abramos otra fecha.</p>
           <button class="boton boton--bloque" type="button" disabled>Agotado</button>
+        {% elif not user.is_authenticated %}
+          {# HU 27: para inscribirse hay que tener cuenta #}
+          <p>Para inscribirte necesitas tu cuenta de Ladyrose. Es rápido, y con ella también recibes descuentos personalizados.</p>
+          <div class="aviso-cuenta">
+            <a class="boton boton--rosa" href="{% url 'clientes:registro' %}?next={{ request.path|urlencode }}%23inscripcion">Crear mi cuenta</a>
+            <a class="boton boton--borde" href="{% url 'clientes:ingresar' %}?next={{ request.path|urlencode }}%23inscripcion">Ya tengo cuenta</a>
+          </div>
         {% else %}
           <p>Apartas tu cupo cuando confirmamos el pago. Te escribimos por WhatsApp con los datos.</p>
           {# HU 26 CA 1: nombre, WhatsApp, correo, curso y modalidad #}

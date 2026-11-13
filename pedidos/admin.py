@@ -4,7 +4,7 @@ from django.utils.html import format_html
 
 from core.templatetags.ladyrose import pesos
 
-from .models import DetallePedido, Pedido, TipoEmpaque
+from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
 
 @admin.register(TipoEmpaque)
@@ -13,6 +13,19 @@ class TipoEmpaqueAdmin(admin.ModelAdmin):
 
     list_display = ("nombre", "descripcion", "costo", "activo", "orden")
     list_editable = ("costo", "activo", "orden")
+
+
+@admin.register(TiempoEnvio)
+class TiempoEnvioAdmin(admin.ModelAdmin):
+    """HU 07: tabla de tiempos de envío por ciudad que administra la dueña.
+
+    Las ciudades que no estén aquí usan el tiempo de "otras ciudades" de la
+    configuración de la tienda.
+    """
+
+    list_display = ("ciudad", "dias_min", "dias_max", "por_transportadora")
+    list_editable = ("dias_min", "dias_max", "por_transportadora")
+    search_fields = ("ciudad",)
 
 
 class DetallePedidoInline(admin.TabularInline):
@@ -39,15 +52,16 @@ class PedidoAdmin(admin.ModelAdmin):
     date_hierarchy = "creado"
     inlines = [DetallePedidoInline]
     readonly_fields = ("numero_pedido", "creado", "ver_comprobante", "abrir_en_panel", "nota_destacada",
-                       "subtotal", "costo_empaque", "total", "canal_origen", "estado_actualizado")
+                       "subtotal", "costo_empaque", "total", "canal_origen", "estado_actualizado",
+                       "cliente", "codigo_descuento", "descuento")
     fieldsets = (
         (None, {"fields": ("numero_pedido", "creado", "abrir_en_panel")}),
-        ("Quien compra", {"fields": ("nombre", "correo", "telefono", "whatsapp_igual", "whatsapp")}),
+        ("Quien compra", {"fields": ("cliente", "nombre", "correo", "telefono", "whatsapp_igual", "whatsapp")}),
         ("Datos de envío", {"fields": ("enviar_a_otra_persona", "nombre_recibe", "telefono_recibe",
                                        "direccion", "barrio", "ciudad", "indicaciones", "estado_envio")}),
         ("Regalo", {"fields": ("empaque", "nota_destacada", "nota", "motivo")}),
         ("Pago", {"fields": ("metodo_pago", "comprobante", "ver_comprobante", "estado_pago",
-                             "subtotal", "costo_empaque", "total")}),
+                             "subtotal", "codigo_descuento", "descuento", "costo_empaque", "total")}),
         ("Producción", {"fields": ("cotizacion", "tecnica", "dias_elaboracion", "fecha_limite",
                                    "estado_produccion", "estado_actualizado", "canal_origen")}),
     )
