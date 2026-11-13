@@ -22,13 +22,13 @@ class ImagenReferenciaInline(admin.TabularInline):
 
 @admin.register(SolicitudCotizacion)
 class SolicitudCotizacionAdmin(admin.ModelAdmin):
-    list_display = ("fecha", "nombre", "tipo", "producto", "whatsapp", "estado")
-    list_filter = ("estado", "tipo")
+    list_display = ("fecha", "nombre", "tipo", "producto", "whatsapp", "seguimiento")
+    list_filter = ("tipo", "consulta__estado")
     search_fields = ("nombre", "whatsapp", "correo", "descripcion", "motivo")
     inlines = [ImagenReferenciaInline]
     readonly_fields = ("motivo_destacado", "tipo", "nombre", "whatsapp", "correo", "descripcion",
                        "producto_original", "cambio_color", "cambio_talla", "cambio_material",
-                       "cambio_otro", "acepta_pieza_unica", "fecha_aceptacion", "fecha")
+                       "cambio_otro", "acepta_pieza_unica", "fecha_aceptacion", "fecha", "seguimiento")
     fieldsets = (
         ("Cliente", {"fields": ("nombre", "whatsapp", "correo", "fecha")}),
         # HU 09: la historia o el motivo aparece destacado al abrir la solicitud
@@ -36,11 +36,17 @@ class SolicitudCotizacionAdmin(admin.ModelAdmin):
         ("Pedido", {"fields": ("tipo", "descripcion", "producto_original", "cambio_color",
                                "cambio_talla", "cambio_material", "cambio_otro")}),
         ("Aviso de pieza única", {"fields": ("acepta_pieza_unica", "fecha_aceptacion")}),
-        ("Seguimiento", {"fields": ("estado",)}),
+        # HU 28: el estado se maneja en la consulta (Seguimiento de clientes › Consultas)
+        ("Seguimiento", {"fields": ("seguimiento",)}),
     )
 
     def has_add_permission(self, request):
         return False
+
+    @admin.display(description="Seguimiento")
+    def seguimiento(self, obj):
+        consulta = getattr(obj, "consulta", None)
+        return consulta.get_estado_display() if consulta else "—"
 
     @admin.display(description="Para quién es / qué la inspira")
     def motivo_destacado(self, obj):

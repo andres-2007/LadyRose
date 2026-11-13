@@ -1,0 +1,17 @@
+{% extends "admin/change_list.html" %}
+{% block content %}
+  {# HU 28 CA 5: cuántas consultas del mes terminaron en compra; CA 3: cuántas están atrasadas #}
+  <div class="lr-resumen">
+    <div><strong>{{ resumen_mes.compraron }} de {{ resumen_mes.total }}</strong>consultas de este mes terminaron en compra ({{ resumen_mes.porcentaje }}%)</div>
+    <a href="?atrasadas=si" class="{% if total_sin_respuesta %}lr-resumen--alerta{% endif %}"><strong>{{ total_sin_respuesta }}</strong>con más de {{ horas_respuesta }} horas hábiles sin respuesta</a>
+    <a href="?estado__exact=nueva"><strong>Nuevas</strong>ver las que faltan por responder</a>
+  </div>
+  {{ block.super }}
+  <script>
+    // HU 28 CA 3: la fila completa de una consulta atrasada queda resaltada
+    document.querySelectorAll("[data-atrasada]").forEach(function (el) {
+      var fila = el.closest("tr");
+      if (fila) fila.classList.add("lr-fila-atrasada");
+    });
+  </script>
+{% endblock %}
