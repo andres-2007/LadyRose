@@ -7,9 +7,13 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
 from catalogo.models import Producto, TallaProducto, texto_dias_habiles
+from clientes.models import CodigoDescuento, CodigoInvalido
+from clientes.views import URL_INGRESAR
+from core.templatetags.ladyrose import pesos
 
 from .carrito import Carrito, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
@@ -78,6 +82,15 @@ def quitar(request):
 # Proceso de pago (HU 24 y HU 11)
 # ------------------------------------------------------------------
 
+def _datos_cuenta(usuario):
+    """HU 27: el pago se llena con los datos de la cuenta del cliente."""
+    cliente = getattr(usuario, "cliente", None)
+    telefono = cliente.whatsapp_contacto if cliente else ""
+    return {"nombre": usuario.get_full_name() or usuario.first_name, "correo": usuario.email,
+            "telefono": telefono, "whatsapp_igual": True}
+
+
+@login_required(login_url=URL_INGRESAR)  # HU 27: para comprar hay que tener cuenta
 def pagar(request):
     c = Carrito(request)
     items = c.items()
@@ -85,26 +98,50 @@ def pagar(request):
         messages.info(request, "Tu carrito está vacío.")
         return redirect("catalogo:lista")
     subtotal = sum((i["subtotal"] for i in items), 0)
-    form = PedidoForm(request.POST or None, request.FILES or None)
+    form = PedidoForm(request.POST or None, request.FILES or None, usuario=request.user,
+                      initial=None if request.method == "POST" else _datos_cuenta(request.user))
     if request.method == "POST" and form.is_valid():
         try:
             pedido = _crear_pedido(request, form, items, subtotal)
         except ErrorCarrito as error:
             messages.error(request, str(error))
             return redirect("pedidos:carrito")
-        c.vaciar()
-        confirmados = request.session.get("pedidos_confirmados", [])
-        request.session["pedidos_confirmados"] = confirmados + [pedido.pk]
-        return redirect("pedidos:confirmado", pk=pedido.pk)
+        except CodigoInvalido as error:
+            form.add_error("codigo", str(error))
+        else:
+            c.vaciar()
+            confirmados = request.session.get("pedidos_confirmados", [])
+            request.session["pedidos_confirmados"] = confirmados + [pedido.pk]
+            return redirect("pedidos:confirmado", pk=pedido.pk)
     productos = [i["producto"] for i in items]
+    codigo = form.codigo_descuento if form.is_bound and not form.errors.get("codigo") else None
     return render(request, "pedidos/pagar.html", {
         "form": form, "items": items, "subtotal": subtotal,
+        # HU 27: descuento del código que ya se validó (si la página vuelve con otros errores)
+        "descuento": codigo.calcular(subtotal) if codigo else 0,
         "empaques": TipoEmpaque.objects.filter(activo=True),
         "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
         # HU 07: tiempo de fabricación del carrito y, si ya hay ciudad, la fecha estimada
         "estimado": estimar_entrega(productos, form["ciudad"].value()),
         "tiempo_fabricacion_carrito": texto_dias_habiles(*tiempos_fabricacion(productos)),
         "ciudades_envio": TiempoEnvio.objects.values_list("ciudad", flat=True),
+    })
+
+
+@require_GET
+@login_required(login_url=URL_INGRESAR)
+def aplicar_codigo(request):
+    """HU 27: revisa el código que escribe el cliente y devuelve cuánto se descuenta."""
+    items = Carrito(request).items()
+    subtotal = sum((i["subtotal"] for i in items), 0)
+    try:
+        codigo = CodigoDescuento.buscar(request.GET.get("codigo", ""), request.user)
+    except CodigoInvalido as error:
+        return JsonResponse({"ok": False, "mensaje": str(error)})
+    descuento = codigo.calcular(subtotal)
+    return JsonResponse({
+        "ok": True, "codigo": codigo.codigo, "descuento": int(descuento),
+        "mensaje": f"Código aplicado: {codigo.descuento_texto} ({pesos(descuento)} menos en tus productos).",
     })
 
 
@@ -127,9 +164,15 @@ def _crear_pedido(request, form, items, subtotal):
             raise ErrorCarrito("Una de las piezas únicas de tu carrito se acaba de vender.")
 
         pedido = form.save(commit=False)
+        pedido.cliente = request.user
         pedido.subtotal = subtotal
         pedido.costo_empaque = pedido.empaque.costo if pedido.empaque else 0
-        pedido.total = subtotal + pedido.costo_empaque
+        # HU 27: el código se bloquea y se vuelve a revisar para que no se use dos veces al mismo tiempo
+        if form.codigo_descuento:
+            codigo = CodigoDescuento.objects.select_for_update().get(pk=form.codigo_descuento.pk)
+            codigo.validar_para(request.user)
+            pedido.descuento = codigo.calcular(subtotal)
+        pedido.total = subtotal - pedido.descuento + pedido.costo_empaque
         pedido.canal_origen = request.session.get("canal_origen", "")
         pedido.save()
         for i in items:
@@ -141,6 +184,12 @@ def _crear_pedido(request, form, items, subtotal):
             )
         pedido.calcular_produccion()
         pedido.save()
+        # HU 27 CA 2: el código queda usado al confirmar el pedido
+        if form.codigo_descuento:
+            codigo.usado_en = timezone.now()
+            codigo.save(update_fields=["usado_en"])
+            pedido.codigo_descuento = codigo
+            pedido.save(update_fields=["codigo_descuento"])
         # HU 08: la pieza única vendida pasa a la galería
         unicas.update(vendida=True)
     return pedido

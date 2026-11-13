@@ -1,6 +1,8 @@
 from django import forms
 from django.core.exceptions import ValidationError
 
+from clientes.models import CodigoDescuento, CodigoInvalido
+
 from .models import MAX_NOTA, Pedido, TipoEmpaque
 
 FORMATOS_COMPROBANTE = ("image/jpeg", "image/png", "application/pdf")
@@ -20,6 +22,13 @@ class PedidoForm(forms.ModelForm):
         queryset=TipoEmpaque.objects.filter(activo=True), required=False,
         empty_label="Empaque normal (sin costo)", widget=forms.RadioSelect,
         label="Empaque",
+    )
+
+    # HU 27: código de descuento asignado a la cuenta del cliente (opcional)
+    codigo = forms.CharField(
+        label="Código de descuento", max_length=30, required=False,
+        widget=forms.TextInput(attrs={"placeholder": "Ej. CUMPLE-PAULA-7K3Q", "autocomplete": "off",
+                                      "data-codigo-descuento": ""}),
     )
 
     class Meta:
@@ -55,7 +64,9 @@ class PedidoForm(forms.ModelForm):
             "comprobante": forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,application/pdf"}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, usuario=None, **kwargs):
+        self.usuario = usuario
+        self.codigo_descuento = None
         super().__init__(*args, **kwargs)
         # HU 24 CA 1: datos obligatorios para el despacho
         for campo in ("nombre", "telefono", "direccion", "barrio", "ciudad", "metodo_pago"):
@@ -65,6 +76,16 @@ class PedidoForm(forms.ModelForm):
         for campo in ("nombre_recibe", "telefono_recibe", "whatsapp", "comprobante"):
             self.fields[campo].required = False
         self.fields["metodo_pago"].choices = Pedido.MetodoPago.choices
+
+    def clean_codigo(self):
+        """HU 27 CA 2: solo con la cuenta a la que se asignó, sin usar y sin vencer."""
+        texto = self.cleaned_data.get("codigo", "").strip().upper()
+        if texto:
+            try:
+                self.codigo_descuento = CodigoDescuento.buscar(texto, self.usuario)
+            except CodigoInvalido as error:
+                raise ValidationError(str(error))
+        return texto
 
     def clean_comprobante(self):
         archivo = self.cleaned_data.get("comprobante")

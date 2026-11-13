@@ -24,3 +24,16 @@ class PruebaConArchivos(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         shutil.rmtree(MEDIA_PRUEBAS, ignore_errors=True)
+
+
+def iniciar_sesion_cliente(prueba, correo="cliente@correo.com", nombre="Cliente Prueba", **datos):
+    """HU 27: para comprar y para inscribirse a un curso hay que tener cuenta de cliente."""
+    from django.contrib.auth import get_user_model
+
+    from clientes.models import Cliente
+
+    usuario = get_user_model().objects.create_user(username=correo, email=correo, password="ClaveSegura123*",
+                                                   first_name=nombre)
+    cliente = Cliente.objects.create(usuario=usuario, **datos)
+    prueba.client.force_login(usuario)
+    return cliente

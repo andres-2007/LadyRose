@@ -12,7 +12,7 @@ from catalogo.models import Categoria, FotoProducto, Producto, TallaProducto
 from core.festivos import festivos_colombia, sumar_dias_habiles
 from core.models import ConfiguracionTienda
 from core.roles import GRUPO_DISENADORA, GRUPO_DUENA, crear_roles
-from core.tests_utils import PruebaConArchivos, imagen
+from core.tests_utils import PruebaConArchivos, imagen, iniciar_sesion_cliente
 from cotizaciones.models import ImagenReferencia, SolicitudCotizacion
 
 from .entregas import estimar_entrega
@@ -38,6 +38,8 @@ class BaseTienda(PruebaConArchivos):
         )
         FotoProducto.objects.create(producto=self.producto, imagen=imagen())
         self.talla = TallaProducto.objects.create(producto=self.producto, nombre="45 cm", medida="Clavícula")
+        # HU 27: para comprar hay que tener cuenta
+        self.cliente = iniciar_sesion_cliente(self)
 
     def agregar_al_carrito(self, producto=None, **datos):
         producto = producto or self.producto
@@ -188,6 +190,7 @@ class PanelBase(BaseTienda):
 
 class HU01PanelPedidosTests(PanelBase):
     def test_solo_entra_el_personal_con_permiso(self):
+        self.client.logout()
         r = self.client.get(reverse("pedidos:panel"))
         self.assertEqual(r.status_code, 302)
         cliente = User.objects.create_user("cliente", password="x")

@@ -118,6 +118,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
   background: none; border: 0; cursor: pointer; color: var(--tinta); text-decoration: none; padding: 0;
 }
 .icono-boton svg { width: 22px; height: 22px; }
+.encabezado__acciones { justify-self: end; display: flex; align-items: center; gap: 2px; }
 .carrito-burbuja {
   position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px;
   border-radius: 9px; background: var(--fucsia); color: #fff; font-size: .66rem; font-weight: 600;
@@ -342,7 +343,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .campo > label, .campo__etiqueta { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
 .campo__ayuda { font-size: .8rem; color: var(--tinta-suave); }
 .campo input[type="text"], .campo input[type="email"], .campo input[type="tel"], .campo input[type="number"],
-.campo input[type="url"], .campo textarea, .campo select {
+.campo input[type="url"], .campo input[type="password"], .campo input[type="date"], .campo textarea, .campo select {
   width: 100%; padding: 13px 14px; border: 1px solid var(--linea); border-radius: var(--radio);
   background: var(--crema); transition: border-color .2s, background .2s; font-size: 1rem;
 }
@@ -626,3 +627,22 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 
 /* La casilla dentro de un campo no lleva el estilo de etiqueta en mayúsculas */
 .campo > label.casilla { text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .94rem; }
+
+/* ---------- HU 27: cuenta del cliente y códigos de descuento ---------- */
+.cuenta-pagina { padding-bottom: 64px; }
+.cuenta-pagina > .bloque-form { margin-bottom: 18px; }
+.cuenta-pagina--corta { max-width: 480px; }
+.cuenta-pagina .bloque-form h2 { font-size: 1.6rem; }
+.cuenta-pagina > form > .centrado, .cuenta-pagina .formulario > .centrado { margin: 4px 0 0; }
+.codigos { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 10px; }
+.codigo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; padding: 12px 14px; border: 1px dashed var(--fucsia); border-radius: var(--radio); background: var(--blush); }
+.codigo__texto { font-family: var(--sans); font-weight: 600; letter-spacing: .08em; color: var(--tinta); background: var(--blanco); padding: 4px 10px; border-radius: var(--radio); }
+.descuento-pago { display: flex; gap: 8px; }
+.descuento-pago input { flex: 1; text-transform: uppercase; }
+.descuento-pago .boton { min-height: 46px; padding: 0 18px; }
+.descuento-pago__mensaje { margin: 8px 0 0; font-size: .86rem; }
+.descuento-pago__mensaje--ok { color: var(--exito); }
+.descuento-pago__mensaje--error { color: var(--error); }
+.resumen__fila--descuento span:last-child { color: var(--exito); font-weight: 500; }
+.aviso-cuenta { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+

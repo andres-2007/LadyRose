@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> ›
+  <a href="{% url 'admin:clientes_codigodescuento_changelist' %}">Códigos de descuento</a> › {{ codigo.codigo }}
+</div>
+{% endblock %}
+{% block content %}
+{# HU 27 CA 4: la dueña revisa el mensaje con el nombre del cliente y elige por dónde enviarlo #}
+<div class="lr-envio">
+  <p><strong>{{ cliente.nombre }}</strong> · {{ cliente.correo }}{% if cliente.whatsapp_contacto %} · WhatsApp {{ cliente.whatsapp_contacto }}{% endif %}</p>
+  <p>{{ codigo.descuento_texto }} · válido hasta el {{ codigo.vence|date:"d/m/Y" }}{% if codigo.enviado_en %} · enviado por última vez el {{ codigo.enviado_en|date:"d/m/Y H:i" }}{% endif %}</p>
+  <h2>Mensaje</h2>
+  <pre class="lr-mensaje">{{ mensaje }}</pre>
+  <form method="post" class="lr-envio__botones">
+    {% csrf_token %}
+    <button type="submit" name="canal" value="correo" class="button default">Enviar por correo</button>
+    {% if cliente.whatsapp_internacional %}
+      <button type="submit" name="canal" value="whatsapp" class="button" formtarget="_blank">Enviar por WhatsApp</button>
+    {% else %}
+      <span class="lr-ayuda">Este cliente no tiene WhatsApp registrado ni pedidos con número.</span>
+    {% endif %}
+  </form>
+</div>
+{% endblock %}
