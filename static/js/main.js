@@ -170,4 +170,41 @@ document.addEventListener("DOMContentLoaded", function () {
         .catch(function () { form.submit(); });
     });
   });
+
+  /* HU 07: tiempo estimado de envío y fechas de entrega según la ciudad que escribe el cliente */
+  var entrega = $("[data-entrega]"), campoCiudad = $("[data-ciudad-entrega]");
+  if (entrega && campoCiudad) {
+    var espera, ultima = null;
+    var poner = function (sel, texto, ocultarSiVacio) {
+      var el = $(sel, entrega);
+      if (!el) return;
+      el.textContent = texto || "";
+      if (ocultarSiVacio) el.hidden = !texto;
+    };
+    var consultar = function () {
+      var ciudad = campoCiudad.value.trim();
+      if (ciudad === ultima) return;
+      ultima = ciudad;
+      if (!ciudad) {
+        poner("[data-entrega-ciudad]", "");
+        poner("[data-entrega-envio]", "Escribe tu ciudad para calcularlo");
+        poner("[data-entrega-mensaje]", "", true);
+        poner("[data-entrega-aviso]", "", true);
+        return;
+      }
+      fetch(entrega.getAttribute("data-url") + "?ciudad=" + encodeURIComponent(ciudad), { headers: { "x-requested-with": "fetch" } })
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (!r.ok || campoCiudad.value.trim() !== ciudad) return;
+          poner("[data-entrega-ciudad]", "a " + r.ciudad);
+          poner("[data-entrega-fabricacion]", r.tiempo_fabricacion);
+          poner("[data-entrega-envio]", r.tiempo_envio);
+          poner("[data-entrega-mensaje]", r.mensaje, true);
+          poner("[data-entrega-aviso]", r.aviso, true);
+        })
+        .catch(function () { ultima = null; });
+    };
+    campoCiudad.addEventListener("input", function () { clearTimeout(espera); espera = setTimeout(consultar, 350); });
+    campoCiudad.addEventListener("change", consultar);
+  }
 });

@@ -84,7 +84,7 @@ class HU15AdministracionCatalogoTests(BaseCatalogo):
             "nombre": "Aretes luna", "categoria": self.categoria.pk, "descripcion": "", "precio": "30000",
             "visible": "on", "precio_oferta": "", "oferta_inicio": "", "oferta_fin": "",
             "instrucciones_cuidado": "", "material": "", "colores": "", "tecnica": "",
-            "dias_elaboracion": "3",
+            "dias_fabricacion_min": "2", "dias_elaboracion": "3",
             "fotos-TOTAL_FORMS": "1", "fotos-INITIAL_FORMS": "0",
             "fotos-0-imagen": imagen(), "fotos-0-orden": "0",
             "tallas-TOTAL_FORMS": "0", "tallas-INITIAL_FORMS": "0",

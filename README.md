@@ -1,9 +1,10 @@
-# Ladyrose - Sprint 1 y Sprint 2
+# Ladyrose - Sprints 1, 2 y 3
 
 Página web de Ladyrose (bisutería artesanal) hecha en Django para el proyecto de Ingeniería de Requisitos.
 
 - Sprint 1: HU 02, 09, 13, 15, 18, 20, 21, 23, 25, 31 y 34.
 - Sprint 2: HU 01, 03, 04, 08, 10, 11, 16, 19, 24 y 26.
+- Sprint 3 (en curso): HU 07.
 
 Equipo: Andres David Duarte y Alejandro Riomaña.
 
@@ -80,7 +81,7 @@ Cada criterio de aceptación tiene su prueba automática:
 python manage.py test
 ```
 
-Tienen que salir 106 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 106.
+Tienen que salir 128 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 128.
 
 Los nombres de las pruebas dicen la HU y el CA que revisan, por ejemplo `HU04EstadosTests.test_ca2_terminado_pasa_a_listos_para_envio`.
 
@@ -143,6 +144,18 @@ Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la pág
 | 19 | Selector con solo las tallas disponibles (también no estándar), guía de medidas y no deja agregar sin talla | `pedidos/carrito.py`, `templates/partials/guia_medidas.html` |
 | 24 | Carrito, datos de envío obligatorios, WhatsApp igual al teléfono, contra entrega o transferencia con comprobante, todo en una vista del panel | `pedidos/`, `templates/pedidos/` |
 | 26 | Inscripción con curso y modalidad, inscritos y cupos en el panel, cambio de pago a mano, Excel y enlace automático en cursos virtuales | `cursos/forms.py`, `cursos/admin.py`, `cursos/excel.py` |
+
+### Sprint 3
+
+| HU | Qué hace | Archivos principales |
+|---|---|---|
+| 07 | Tiempo de fabricación mínimo y máximo en el producto y en su ficha; tabla de tiempos de envío por ciudad en el panel; en el pago, al escribir la ciudad, se ve el tiempo de envío y las fechas estimadas de entrega (en días hábiles, sin festivos de Colombia); aviso de la transportadora para otras ciudades | `catalogo/models.py`, `pedidos/entregas.py`, `core/festivos.py`, `templates/pedidos/_entrega_estimada.html` |
+
+Para la HU 07:
+
+- La dueña edita los tiempos en **Pedidos › Tiempos de envío por ciudad**. Cali viene creada (entrega directa de Ladyrose, sin transportadora). Las ciudades que no estén en la tabla usan el tiempo de "otras ciudades" de **Sitio › Configuración de la tienda**.
+- Si en un pedido hay varios productos, cuenta el que más se demora en fabricarse, porque se hacen al mismo tiempo.
+- Los festivos de Colombia se calculan solos para cualquier año (Ley Emiliani y Semana Santa), en `core/festivos.py`. La fecha límite del panel de producción (HU 01) también los salta.
 
 Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `cursos`, `cotizaciones`, `pedidos` y `core`).
 

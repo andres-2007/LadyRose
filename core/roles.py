@@ -22,7 +22,7 @@ PERMISOS = {
                      "coleccion": CRUD},
         "cursos": {"curso": CRUD, "fotocurso": CRUD, "inscripcion": CRUD},
         "cotizaciones": {"solicitudcotizacion": ("change", "view"), "imagenreferencia": ("view",)},
-        "pedidos": {"pedido": CRUD, "detallepedido": CRUD, "tipoempaque": CRUD},
+        "pedidos": {"pedido": CRUD, "detallepedido": CRUD, "tipoempaque": CRUD, "tiempoenvio": CRUD},
         "core": {
             "configuraciontienda": ("change", "view"),
             "contenidohistoria": ("change", "view"),
