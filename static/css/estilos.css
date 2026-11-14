@@ -656,3 +656,18 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 .preguntanos summary svg { width: 20px; height: 20px; color: var(--fucsia); flex: none; }
 .preguntanos__form { display: grid; gap: 12px; padding: 0 16px 16px; }
 .preguntanos__form .boton { justify-self: start; }
+
+/* ---------- HU 30: costo del envío ---------- */
+.aviso--rosa { background: var(--blush); border-left-color: var(--fucsia); }
+.envio-costo { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: var(--radio); background: var(--arena); font-size: .9rem; }
+.envio-costo strong { font-weight: 500; color: var(--tinta); }
+.envio-costo span[data-envio-mensaje] { color: var(--tinta-suave); }
+.pedido-cliente .resumen { position: static; }
+.texto-rosa { color: var(--rosa); }
+
+/* HU 30: el barrio puede tener la lista y el campo "Escribe tu barrio" */
+.campos { align-items: start; }
+[data-barrio] > div:not([hidden]) { display: grid; gap: 6px; }
+[data-barrio] > div + div:not([hidden]) { margin-top: 10px; }
+[data-barrio] label { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
+.campo--error [data-barrio] label, [data-barrio].campo--error label { color: var(--error); }

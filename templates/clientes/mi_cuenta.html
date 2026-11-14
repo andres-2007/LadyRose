@@ -31,7 +31,7 @@
     <h2>Mis pedidos</h2>
     {% if pedidos %}
       {% for p in pedidos %}
-        <div class="resumen__fila"><span>{{ p.numero }} · {{ p.creado|date:"j M Y" }}</span><span>{{ p.total|pesos }}</span></div>
+        <div class="resumen__fila"><span>{% if p.cliente_id == user.id %}<a href="{% url 'pedidos:mi_pedido' p.pk %}">{{ p.numero }}</a>{% else %}{{ p.numero }}{% endif %} · {{ p.creado|date:"j M Y" }}{% if p.envio_por_confirmar %} · <span class="texto-suave">envío por confirmar</span>{% endif %}</span><span>{{ p.total|pesos }}</span></div>
       {% endfor %}
     {% else %}
       <p class="texto-suave">Todavía no has hecho pedidos. <a href="{% url 'catalogo:lista' %}">Mira el catálogo</a>.</p>

@@ -17,7 +17,8 @@ from core.templatetags.ladyrose import pesos
 
 from .carrito import Carrito, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
-from .forms import AvisoClienteForm, PedidoForm
+from .envios import MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio
+from .forms import AvisoClienteForm, ComprobanteForm, PedidoForm
 from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
 ESTADOS_SELECTOR = [
@@ -98,7 +99,8 @@ def pagar(request):
         messages.info(request, "Tu carrito está vacío.")
         return redirect("catalogo:lista")
     subtotal = sum((i["subtotal"] for i in items), 0)
-    form = PedidoForm(request.POST or None, request.FILES or None, usuario=request.user,
+    lineas = [(i["producto"], i["cantidad"]) for i in items]
+    form = PedidoForm(request.POST or None, request.FILES or None, usuario=request.user, items=lineas,
                       initial=None if request.method == "POST" else _datos_cuenta(request.user))
     if request.method == "POST" and form.is_valid():
         try:
@@ -119,6 +121,9 @@ def pagar(request):
         "form": form, "items": items, "subtotal": subtotal,
         # HU 27: descuento del código que ya se validó (si la página vuelve con otros errores)
         "descuento": codigo.calcular(subtotal) if codigo else 0,
+        # HU 30: costo del envío si la página vuelve con la ciudad y el barrio ya escritos
+        "envio": form.envio,
+        "mensaje_transferencia_por_confirmar": MENSAJE_TRANSFERENCIA_POR_CONFIRMAR,
         "empaques": TipoEmpaque.objects.filter(activo=True),
         "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
         # HU 07: tiempo de fabricación del carrito y, si ya hay ciudad, la fecha estimada
@@ -126,6 +131,18 @@ def pagar(request):
         "tiempo_fabricacion_carrito": texto_dias_habiles(*tiempos_fabricacion(productos)),
         "ciudades_envio": TiempoEnvio.objects.values_list("ciudad", flat=True),
     })
+
+
+@require_GET
+def calcular_envio_vista(request):
+    """HU 30: costo del envío para la ciudad y el barrio que escribe el cliente."""
+    lineas = [(i["producto"], i["cantidad"]) for i in Carrito(request).items()]
+    ciudad = request.GET.get("ciudad", "").strip()
+    if not lineas or not ciudad:
+        return JsonResponse({"ok": False})
+    envio = calcular_envio(lineas, ciudad, request.GET.get("barrio", ""))
+    return JsonResponse({"ok": True, **envio.como_dict(),
+                         "texto": pesos(envio.valor) if envio.valor else ("Gratis" if envio.valor == 0 else "Por confirmar")})
 
 
 @require_GET
@@ -172,7 +189,13 @@ def _crear_pedido(request, form, items, subtotal):
             codigo = CodigoDescuento.objects.select_for_update().get(pk=form.codigo_descuento.pk)
             codigo.validar_para(request.user)
             pedido.descuento = codigo.calcular(subtotal)
-        pedido.total = subtotal - pedido.descuento + pedido.costo_empaque
+        # HU 30: costo del envío según la zona o el peso (o "por confirmar")
+        envio = form.envio
+        pedido.peso_total = envio.peso
+        pedido.costo_envio = envio.valor
+        pedido.envio_costo_estado = envio.estado
+        pedido.envio_detalle = envio.detalle
+        pedido.calcular_total()
         pedido.canal_origen = request.session.get("canal_origen", "")
         pedido.save()
         for i in items:
@@ -193,6 +216,23 @@ def _crear_pedido(request, form, items, subtotal):
         # HU 08: la pieza única vendida pasa a la galería
         unicas.update(vendida=True)
     return pedido
+
+
+@login_required(login_url=URL_INGRESAR)
+def mi_pedido(request, pk):
+    """HU 30: el cliente ve su pedido con el envío y, si paga por transferencia, sube el comprobante."""
+    pedido = get_object_or_404(Pedido.objects.prefetch_related("detalles"), pk=pk, cliente=request.user)
+    puede_subir = (pedido.metodo_pago == Pedido.MetodoPago.TRANSFERENCIA and not pedido.comprobante
+                   and not pedido.envio_por_confirmar)
+    form = ComprobanteForm(request.POST or None, request.FILES or None) if puede_subir else None
+    if form is not None and request.method == "POST" and form.is_valid():
+        pedido.comprobante = form.cleaned_data["comprobante"]
+        pedido.save(update_fields=["comprobante"])
+        messages.success(request, "¡Recibimos tu comprobante! Lo revisamos y despachamos tu pedido.")
+        return redirect("pedidos:mi_pedido", pk=pedido.pk)
+    return render(request, "pedidos/mi_pedido.html", {
+        "pedido": pedido, "form": form, "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
+    })
 
 
 def confirmado(request, pk):

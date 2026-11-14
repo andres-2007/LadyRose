@@ -133,7 +133,8 @@ document.addEventListener("DOMContentLoaded", function () {
       var elegido = $('input[name="empaque"]:checked');
       var costo = elegido ? parseInt(elegido.getAttribute("data-costo") || "0", 10) : 0;
       var descuento = parseInt(totalPago.getAttribute("data-descuento") || "0", 10);  // HU 27
-      totalPago.textContent = formato(base - descuento + costo);
+      var envio = parseInt(totalPago.getAttribute("data-envio") || "0", 10);  // HU 30
+      totalPago.textContent = formato(base - descuento + costo + envio);
       if (filaEmpaque) {
         filaEmpaque.classList.toggle("oculto", !costo);
         $("span:last-child", filaEmpaque).textContent = formato(costo);
@@ -141,6 +142,62 @@ document.addEventListener("DOMContentLoaded", function () {
     };
     $$('input[name="empaque"]').forEach(function (r) { r.addEventListener("change", recalcular); });
     recalcular();
+
+    /* HU 30: barrio desde la lista en Cali y costo del envío según la zona o el peso */
+    var bloqueEnvio = $("[data-envio]"), campoCiudadEnvio = $('input[name="ciudad"]');
+    var listaBarrio = $('select[name="barrio_lista"]'), textoBarrio = $('input[name="barrio"]');
+    var cajaLista = $("[data-barrio-lista]"), cajaTexto = $("[data-barrio-texto]");
+    var normalizar = function (t) {
+      return (t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\./g, " ").trim().replace(/\s+/g, " ");
+    };
+    var esCali = function () { var c = normalizar(campoCiudadEnvio ? campoCiudadEnvio.value : ""); return c === "cali" || c === "santiago de cali"; };
+    var mostrarBarrio = function () {
+      if (!cajaLista || !listaBarrio) return;
+      var usarLista = esCali();
+      cajaLista.hidden = !usarLista;
+      cajaTexto.hidden = usarLista && listaBarrio.value !== "otro";
+      var etiquetaOtro = $("[data-barrio-otro-texto]");
+      if (etiquetaOtro) etiquetaOtro.textContent = usarLista ? "Escribe tu barrio" : "Barrio";
+      if (usarLista && listaBarrio.value && listaBarrio.value !== "otro") textoBarrio.value = listaBarrio.value;
+    };
+    var barrioActual = function () {
+      if (listaBarrio && cajaLista && !cajaLista.hidden && listaBarrio.value && listaBarrio.value !== "otro") return listaBarrio.value;
+      return textoBarrio ? textoBarrio.value : "";
+    };
+    var esperaEnvio;
+    var consultarEnvio = function () {
+      if (!bloqueEnvio || !campoCiudadEnvio) return;
+      var ciudad = campoCiudadEnvio.value.trim();
+      var filaResumen = $("[data-envio-resumen]"), nota = $("[data-total-nota]");
+      var espera = $("[data-transferencia-espera]"), ahora = $("[data-transferencia-ahora]");
+      var poner = function (r) {
+        var porConfirmar = !!(r && r.por_confirmar);
+        totalPago.setAttribute("data-envio", r && r.valor ? r.valor : 0);
+        if (filaResumen) {
+          filaResumen.textContent = r ? r.texto : "Escribe tu ciudad";
+          filaResumen.classList.toggle("texto-suave", !r || r.valor === null);
+        }
+        bloqueEnvio.hidden = !r;
+        if (r) {
+          $("[data-envio-texto]", bloqueEnvio).textContent = r.texto;
+          $("[data-envio-mensaje]", bloqueEnvio).textContent = r.mensaje;
+        }
+        if (nota) nota.hidden = !porConfirmar;
+        if (espera) espera.hidden = !porConfirmar;
+        if (ahora) ahora.hidden = porConfirmar;
+        recalcular();
+      };
+      if (!ciudad) { poner(null); return; }
+      fetch(bloqueEnvio.getAttribute("data-url") + "?ciudad=" + encodeURIComponent(ciudad) + "&barrio=" + encodeURIComponent(barrioActual()),
+            { headers: { "x-requested-with": "fetch" } })
+        .then(function (r) { return r.json(); })
+        .then(function (r) { if (r.ok) poner(r); });
+    };
+    var alCambiarDireccion = function () { mostrarBarrio(); clearTimeout(esperaEnvio); esperaEnvio = setTimeout(consultarEnvio, 350); };
+    if (campoCiudadEnvio) { campoCiudadEnvio.addEventListener("input", alCambiarDireccion); campoCiudadEnvio.addEventListener("change", alCambiarDireccion); }
+    if (listaBarrio) listaBarrio.addEventListener("change", alCambiarDireccion);
+    if (textoBarrio) textoBarrio.addEventListener("input", alCambiarDireccion);
+    mostrarBarrio();
 
     /* HU 27: aplicar el código de descuento sin recargar la página */
     var bloqueDescuento = $("[data-descuento]"), campoCodigo = $("[data-codigo-descuento]");

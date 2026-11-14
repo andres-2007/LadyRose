@@ -139,6 +139,12 @@ class Producto(models.Model):
         validators=[MinValueValidator(1, "Debe ser de al menos 1 día hábil."), MaxValueValidator(60)],
         help_text="Días hábiles. Se usa también para la fecha límite del pedido en el panel de producción.",
     )
+    # HU 30: peso para calcular el envío a otras ciudades (tabla de tarifas por peso de Servientrega)
+    peso = models.PositiveIntegerField(
+        "Peso (gramos)", default=50,
+        validators=[MinValueValidator(1, "El peso debe ser de al menos 1 gramo."), MaxValueValidator(10000)],
+        help_text="Peso del accesorio en gramos. Es obligatorio: con él se calcula el envío a otras ciudades.",
+    )
     # HU 16: un producto puede estar en varias colecciones
     colecciones = models.ManyToManyField(Coleccion, blank=True, related_name="productos",
                                          verbose_name="Colecciones")

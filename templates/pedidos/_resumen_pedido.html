@@ -1,0 +1,11 @@
+{% load ladyrose %}
+{# Resumen de un pedido ya hecho (confirmación y página del pedido del cliente) #}
+{% for d in pedido.detalles.all %}
+  <div class="resumen__fila"><span>{{ d.referencia }}{% if d.talla %} · {{ d.talla }}{% endif %}{% if d.color %} · {{ d.color }}{% endif %} × {{ d.cantidad }}</span><span>{{ d.subtotal|pesos }}</span></div>
+{% endfor %}
+<div class="resumen__fila" style="border-top:1px solid var(--linea);margin-top:8px;padding-top:12px"><span>Productos</span><span>{{ pedido.subtotal|pesos }}</span></div>
+{% if pedido.descuento %}<div class="resumen__fila resumen__fila--descuento"><span>Descuento ({{ pedido.codigo_descuento.codigo }})</span><span>- {{ pedido.descuento|pesos }}</span></div>{% endif %}
+{% if pedido.empaque %}<div class="resumen__fila"><span>{{ pedido.empaque.nombre }}</span><span>{{ pedido.costo_empaque|pesos }}</span></div>{% endif %}
+{# HU 30 CA 5: el envío aparece separado del valor de los productos #}
+<div class="resumen__fila"><span>Envío</span><span {% if pedido.envio_por_confirmar %}class="texto-suave"{% endif %}>{% if pedido.envio_por_confirmar %}Por confirmar{% elif pedido.costo_envio == 0 %}Gratis{% elif pedido.costo_envio is not None %}{{ pedido.costo_envio|pesos }}{% else %}—{% endif %}</span></div>
+<div class="resumen__fila resumen__fila--total"><span>Total{% if pedido.envio_por_confirmar %} sin envío{% endif %}</span><span>{{ pedido.total|pesos }}</span></div>

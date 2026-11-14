@@ -35,8 +35,26 @@
         <h2><span class="bloque-form__numero">2</span>¿A dónde lo enviamos?</h2>
         <div class="campos dos-columnas">
           {% include "partials/campo.html" with campo=form.direccion clase="ancho" %}
-          {% include "partials/campo.html" with campo=form.barrio %}
           {% include "partials/campo.html" with campo=form.ciudad %}
+          {# HU 30: en Cali el barrio se escoge de la lista de zonas; si no está, "Otro barrio" y se escribe #}
+          <div class="campo {% if form.barrio.errors %}campo--error{% endif %}" data-barrio>
+            {% if form.hay_barrios %}
+              <div data-barrio-lista>
+                <label for="{{ form.barrio_lista.id_for_label }}">Barrio <span aria-hidden="true">*</span></label>
+                {{ form.barrio_lista }}
+              </div>
+            {% endif %}
+            <div data-barrio-texto>
+              <label for="{{ form.barrio.id_for_label }}">{% if form.hay_barrios %}<span data-barrio-otro-texto>Escribe tu barrio</span>{% else %}Barrio{% endif %} <span aria-hidden="true">*</span></label>
+              {{ form.barrio }}
+            </div>
+            {% if form.barrio.errors %}<ul class="errores">{% for e in form.barrio.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+          {# HU 30: costo del envío según la zona o el peso #}
+          <div class="envio-costo ancho" data-envio data-url="{% url 'pedidos:calcular_envio' %}" aria-live="polite" {% if not envio %}hidden{% endif %}>
+            <strong>Costo del envío: <span data-envio-texto>{% if envio %}{% if envio.valor is None %}Por confirmar{% elif envio.valor == 0 %}Gratis{% else %}{{ envio.valor|pesos }}{% endif %}{% endif %}</span></strong>
+            <span data-envio-mensaje>{{ envio.mensaje }}</span>
+          </div>
           {% include "pedidos/_entrega_estimada.html" %}
           {% include "partials/campo.html" with campo=form.indicaciones clase="ancho" %}
           <label class="casilla casilla--destacada ancho">{{ form.enviar_a_otra_persona }}
@@ -109,9 +127,13 @@
             {% if form.metodo_pago.errors %}<ul class="errores">{% for e in form.metodo_pago.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
           </div>
           <div data-mostrar-si="metodo_pago=transferencia">
-            <div class="aviso aviso--neutro">{{ datos_transferencia }}</div>
-            {% include "partials/campo.html" with campo=form.comprobante %}
-            <span class="campo__ayuda">JPG, PNG o PDF de máximo 5 MB.</span>
+            {# HU 30: con el envío por confirmar se transfiere después, cuando se conoce el total #}
+            <div class="aviso aviso--rosa" data-transferencia-espera {% if not envio.por_confirmar %}hidden{% endif %}>{{ mensaje_transferencia_por_confirmar }}</div>
+            <div data-transferencia-ahora {% if envio.por_confirmar %}hidden{% endif %}>
+              <div class="aviso aviso--neutro">{{ datos_transferencia }}</div>
+              {% include "partials/campo.html" with campo=form.comprobante %}
+              <span class="campo__ayuda">JPG, PNG o PDF de máximo 5 MB.</span>
+            </div>
           </div>
         </div>
       </section>
@@ -134,8 +156,10 @@
       <div class="resumen__fila" style="border-top:1px solid var(--linea);margin-top:8px;padding-top:14px"><span>Subtotal</span><span>{{ subtotal|pesos }}</span></div>
       <div class="resumen__fila resumen__fila--descuento {% if not descuento %}oculto{% endif %}" data-fila-descuento><span>Descuento</span><span>- {{ descuento|pesos }}</span></div>
       <div class="resumen__fila oculto" data-fila-empaque><span>Empaque de regalo</span><span></span></div>
-      <div class="resumen__fila"><span>Envío</span><span class="texto-suave">Se acuerda al despachar</span></div>
-      <div class="resumen__fila resumen__fila--total"><span>Total</span><span data-total data-subtotal="{{ subtotal|floatformat:0 }}" data-descuento="{{ descuento|floatformat:0 }}">{{ subtotal|pesos }}</span></div>
+      {# HU 30 CA 5: el envío aparece separado del valor de los productos #}
+      <div class="resumen__fila" data-fila-envio><span>Envío</span><span data-envio-resumen class="{% if not envio or envio.valor is None %}texto-suave{% endif %}">{% if not envio %}Escribe tu ciudad{% elif envio.valor is None %}Por confirmar{% elif envio.valor == 0 %}Gratis{% else %}{{ envio.valor|pesos }}{% endif %}</span></div>
+      <div class="resumen__fila resumen__fila--total"><span>Total</span><span data-total data-subtotal="{{ subtotal|floatformat:0 }}" data-descuento="{{ descuento|floatformat:0 }}" data-envio="{% if envio.valor %}{{ envio.valor|floatformat:0 }}{% else %}0{% endif %}">{{ subtotal|pesos }}</span></div>
+      <p class="campo__ayuda" data-total-nota {% if not envio.por_confirmar %}hidden{% endif %}>El total no incluye el envío: te avisamos su valor antes de despachar.</p>
     </aside>
   </div>
 </div>
