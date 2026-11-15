@@ -14,6 +14,7 @@ from django.views.decorators.http import require_GET, require_POST
 from catalogo.models import Producto, TallaProducto, texto_dias_habiles
 from clientes.models import CodigoDescuento, CodigoInvalido
 from clientes.views import URL_INGRESAR
+from core.models import ConfiguracionTienda
 from core.templatetags.ladyrose import pesos
 
 from .carrito import Carrito, CarritoMayorista, ErrorCarrito
@@ -159,6 +160,14 @@ def _pagar(request, c):
         messages.info(request, "Tu carrito está vacío.")
         return redirect("catalogo:lista")
     subtotal = sum((i["subtotal"] for i in items), 0)
+    # HU 14 CA 2: el pedido mayorista solo se confirma si llega al monto mínimo vigente (HU 25).
+    # No se exige cantidad mínima por referencia.
+    if c.mayorista:
+        minimo = ConfiguracionTienda.obtener().monto_minimo_mayorista
+        if subtotal < minimo:
+            messages.error(request, f"Para confirmar el pedido al por mayor el subtotal debe ser de al menos "
+                                    f"{pesos(minimo)}. Agrega más referencias o unidades.")
+            return redirect("pedidos:carrito_mayorista")
     lineas = [(i["producto"], i["cantidad"]) for i in items]
     form = PedidoForm(request.POST or None, request.FILES or None, usuario=request.user, items=lineas,
                       initial=None if request.method == "POST" else _datos_cuenta(request.user))
