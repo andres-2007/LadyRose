@@ -54,8 +54,15 @@
     <aside class="resumen">
       <h2>Resumen</h2>
       <div class="resumen__fila"><span>Subtotal</span><span>{{ subtotal|pesos }}</span></div>
+      <div class="resumen__fila"><span>Monto mínimo</span><span>{{ minimo.minimo|pesos }}</span></div>
       <div class="resumen__fila"><span>Envío</span><span class="texto-suave">Se calcula en el siguiente paso</span></div>
-      <a class="boton boton--bloque" href="{% url 'pedidos:pagar_mayorista' %}" style="margin-top:16px">Continuar con el pedido</a>
+      {% include "pedidos/_avance_minimo.html" with estado=minimo %}
+      {% if minimo.alcanza %}
+        <a class="boton boton--bloque" href="{% url 'pedidos:pagar_mayorista' %}" style="margin-top:16px">Continuar con el pedido</a>
+      {% else %}
+        <span class="boton boton--bloque boton--inactivo" aria-disabled="true" style="margin-top:16px">Continuar con el pedido</span>
+        <p class="resumen__nota">Puedes continuar cuando tu pedido llegue al monto mínimo.</p>
+      {% endif %}
     </aside>
   </div>
   {% else %}

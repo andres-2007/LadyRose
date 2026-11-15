@@ -699,3 +699,11 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
   .referencia-mayor { grid-template-columns: 88px minmax(0, 1fr) auto auto; }
   .referencia-mayor__agregar { grid-column: auto; flex-wrap: nowrap; justify-content: flex-end; }
 }
+.avance-minimo { margin: 12px 0 0; }
+.avance-minimo__barra { height: 8px; border-radius: 99px; background: var(--arena); overflow: hidden; }
+.avance-minimo__barra span { display: block; height: 100%; background: var(--fucsia); border-radius: 99px; transition: width .3s ease; }
+.avance-minimo--listo .avance-minimo__barra span { background: var(--exito); }
+.avance-minimo__texto { margin: 6px 0 0; font-size: .9rem; }
+.avance-minimo--listo .avance-minimo__texto { color: var(--exito); }
+.barra-pedido-mayor__texto { flex: 1 1 260px; }
+.boton--inactivo, .boton--inactivo:hover { background: var(--arena-oscura); border-color: var(--arena-oscura); color: var(--tinta-suave); cursor: not-allowed; }

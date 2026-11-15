@@ -29,7 +29,10 @@
   {# HU 14: resumen del pedido al por mayor (va aparte del carrito al detal) #}
   {% if unidades_pedido %}
   <div class="barra-pedido-mayor" role="status">
-    <div><strong>Tu pedido al por mayor:</strong> {{ unidades_pedido }} unidad{{ unidades_pedido|pluralize:"es" }} · {{ subtotal_pedido|pesos }}</div>
+    <div class="barra-pedido-mayor__texto">
+      <div><strong>Tu pedido al por mayor:</strong> {{ unidades_pedido }} unidad{{ unidades_pedido|pluralize:"es" }} · {{ subtotal_pedido|pesos }}</div>
+      {% include "pedidos/_avance_minimo.html" with estado=estado_minimo %}
+    </div>
     <a class="boton boton--rosa" href="{% url 'pedidos:carrito_mayorista' %}">Ver pedido</a>
   </div>
   {% endif %}
