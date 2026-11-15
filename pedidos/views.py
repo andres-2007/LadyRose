@@ -283,6 +283,8 @@ def estimar(request, mayorista=False):
 
 def _crear_pedido(request, form, items, subtotal, mayorista=False):
     with transaction.atomic():
+        # HU 12: un pago en línea que quedó a medias no debe bloquear la nueva compra
+        pagos.soltar_intentos_anteriores(request.user)
         # Las piezas únicas se bloquean para que dos personas no compren la misma (HU 08)
         ids_unicas = [i["producto"].pk for i in items if i["producto"].pieza_unica]
         unicas = Producto.objects.select_for_update().filter(pk__in=ids_unicas)
@@ -385,7 +387,12 @@ def resultado_pago(request):
         return redirect("pedidos:confirmado", pk=pedido.pk)
     if pago.estado == Pago.Estado.PENDIENTE:
         return render(request, "pedidos/pago_en_proceso.html", {"pago": pago})
-    messages.error(request, "El pago no se completó.")
+    # CA 2: si el pago se cancela o falla, vuelve a la tienda con su carrito intacto
+    if pago.estado == Pago.Estado.CANCELADO:
+        texto = "Cancelaste el pago."
+    else:
+        texto = f"Tu pago con {pago.get_metodo_display()} no fue aprobado."
+    messages.warning(request, f"{texto} Tu carrito sigue igual: puedes intentarlo otra vez o escoger otra forma de pago.")
     return redirect("pedidos:carrito_mayorista" if pedido.es_mayorista else "pedidos:carrito")
 
 

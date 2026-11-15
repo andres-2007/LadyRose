@@ -80,7 +80,39 @@ def registrar_transaccion(datos):
         pedido = pago.pedido
         if estado == Pago.Estado.APROBADO:
             pedido.estado_pago = Pedido.EstadoPago.APROBADO
+            pedido.save(update_fields=["estado_pago"])
         else:
             pedido.estado_pago = Pedido.EstadoPago.RECHAZADO
-        pedido.save(update_fields=["estado_pago"])
+            pedido.save(update_fields=["estado_pago"])
+            liberar_reservas(pedido)
     return pago
+
+
+def liberar_reservas(pedido):
+    """CA 2: si el pago se cancela o falla, se suelta lo que el pedido tenía apartado
+    para que el cliente pueda volver a intentarlo con su carrito intacto:
+    - las piezas únicas vuelven a estar a la venta (HU 08)
+    - el código de descuento vuelve a quedar sin usar (HU 27)
+    """
+    from catalogo.models import Producto
+
+    ids = [d.producto_id for d in pedido.detalles.all() if d.producto_id]
+    Producto.objects.filter(pk__in=ids, pieza_unica=True, vendida=True).update(vendida=False)
+    if pedido.codigo_descuento_id:
+        codigo = pedido.codigo_descuento
+        codigo.usado_en = None
+        codigo.save(update_fields=["usado_en"])
+        pedido.codigo_descuento = None
+        pedido.save(update_fields=["codigo_descuento"])
+
+
+def soltar_intentos_anteriores(usuario):
+    """Si el cliente dejó un pago en línea a medias (cerró la ventana de la pasarela) y vuelve a
+    comprar, ese intento se da por cancelado y se suelta lo que tenía apartado."""
+    abandonados = Pedido.objects.filter(cliente=usuario, estado_pago=Pedido.EstadoPago.EN_PASARELA)
+    for pedido in abandonados:
+        pedido.pagos.filter(estado=Pago.Estado.PENDIENTE).update(
+            estado=Pago.Estado.CANCELADO, detalle="El cliente no terminó el pago")
+        pedido.estado_pago = Pedido.EstadoPago.RECHAZADO
+        pedido.save(update_fields=["estado_pago"])
+        liberar_reservas(pedido)
