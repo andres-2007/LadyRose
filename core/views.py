@@ -29,10 +29,16 @@ def historia(request):
 
 
 def mayorista(request):
-    """HU 25: página del módulo mayorista con el monto mínimo vigente.
-
-    El carrito mayorista se construye en la HU 14 (Sprint 3).
-    """
+    """HU 25 y HU 14: módulo mayorista con el monto mínimo vigente y el precio mayorista de cada referencia."""
+    productos = (Producto.objects.mayoristas().select_related("categoria")
+                 .prefetch_related("fotos", "tallas").order_by("categoria__nombre", "nombre"))
+    categoria = request.GET.get("categoria", "")
+    categorias = sorted({p.categoria for p in productos}, key=lambda c: c.nombre)
+    if categoria:
+        productos = productos.filter(categoria__slug=categoria)
     return render(request, "core/mayorista.html", {
         "monto_minimo": ConfiguracionTienda.obtener().monto_minimo_mayorista,
+        "productos": productos,
+        "categorias": categorias,
+        "categoria_actual": categoria,
     })

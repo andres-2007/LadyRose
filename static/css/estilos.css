@@ -671,3 +671,23 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 [data-barrio] > div + div:not([hidden]) { margin-top: 10px; }
 [data-barrio] label { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
 .campo--error [data-barrio] label, [data-barrio].campo--error label { color: var(--error); }
+
+/* ---------- HU 14: módulo de compras al por mayor ---------- */
+.referencias-mayor { padding-bottom: 64px; }
+.referencias-mayor__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 18px; }
+.referencias-mayor__cabecera h2 { margin: 0; }
+.referencias-mayor__lista { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linea); }
+.referencia-mayor { display: grid; grid-template-columns: 72px 1fr; gap: 10px 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--linea); }
+.referencia-mayor__foto { width: 72px; height: 72px; border-radius: var(--radio); overflow: hidden; background: var(--arena); }
+.referencia-mayor__foto img { width: 100%; height: 100%; object-fit: cover; }
+.referencia-mayor__datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.referencia-mayor__nombre { font-family: var(--serif); font-size: 1.3rem; line-height: 1.2; }
+.referencia-mayor__nombre:hover { color: var(--rosa); }
+.referencia-mayor__precios { grid-column: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.referencia-mayor__detal { font-size: .85rem; color: var(--tinta-suave); }
+.referencia-mayor__precio { font-size: 1.15rem; color: var(--tinta); }
+@media (min-width: 768px) {
+  .referencia-mayor { grid-template-columns: 88px minmax(0, 1fr) auto; }
+  .referencia-mayor__foto { width: 88px; height: 88px; }
+  .referencia-mayor__precios { grid-column: auto; flex-direction: column; align-items: flex-end; text-align: right; }
+}
