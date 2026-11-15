@@ -120,17 +120,37 @@
         <h2><span class="bloque-form__numero">5</span>Forma de pago</h2>
         <div class="campos">
           <div class="campo {% if form.metodo_pago.errors %}campo--error{% endif %}">
-            <div class="radios">
+            <div class="radios radios--pago">
+              {# HU 12: pago en línea por la pasarela (Wompi) #}
+              <label class="radio-tarjeta">
+                <input type="radio" name="metodo_pago" value="nequi" {% if form.metodo_pago.value == "nequi" %}checked{% endif %}>
+                <div><strong>Nequi</strong><span>Apruebas el pago con una notificación en tu app de Nequi.</span></div>
+                <span class="metodo-logo metodo-logo--nequi" aria-hidden="true">N</span>
+              </label>
+              <label class="radio-tarjeta">
+                <input type="radio" name="metodo_pago" value="pse" {% if form.metodo_pago.value == "pse" %}checked{% endif %}>
+                <div><strong>PSE</strong><span>Pagas desde la cuenta de ahorros o corriente de tu banco.</span></div>
+                <span class="metodo-logo metodo-logo--pse" aria-hidden="true">PSE</span>
+              </label>
+              <label class="radio-tarjeta">
+                <input type="radio" name="metodo_pago" value="bancolombia" {% if form.metodo_pago.value == "bancolombia" %}checked{% endif %}>
+                <div><strong>Transferencia Bancolombia</strong><span>Pagas con el botón de Bancolombia desde tu cuenta.</span></div>
+                <span class="metodo-logo metodo-logo--bancolombia" aria-hidden="true">B</span>
+              </label>
               <label class="radio-tarjeta">
                 <input type="radio" name="metodo_pago" value="contra_entrega" {% if form.metodo_pago.value == "contra_entrega" %}checked{% endif %}>
                 <div><strong>Pago contra entrega</strong><span>Pagas en efectivo cuando recibes el pedido.</span></div>
               </label>
               <label class="radio-tarjeta">
                 <input type="radio" name="metodo_pago" value="transferencia" {% if form.metodo_pago.value == "transferencia" %}checked{% endif %}>
-                <div><strong>Transferencia antes del envío</strong><span>Nequi o transferencia bancaria. Adjuntas el comprobante aquí mismo.</span></div>
+                <div><strong>Transferencia con comprobante</strong><span>Nequi o transferencia bancaria por tu cuenta. Adjuntas el comprobante aquí mismo.</span></div>
               </label>
             </div>
             {% if form.metodo_pago.errors %}<ul class="errores">{% for e in form.metodo_pago.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+          </div>
+          <div data-mostrar-si="metodo_pago=nequi|pse|bancolombia">
+            <div class="aviso aviso--neutro" data-si-envio-calculado {% if envio.por_confirmar %}hidden{% endif %}>Al confirmar te llevamos a la página segura de pagos. Tu pedido queda confirmado cuando el pago sea aprobado; si lo cancelas, tu carrito sigue igual.</div>
+            <div class="aviso aviso--rosa" data-si-envio-por-confirmar {% if not envio.por_confirmar %}hidden{% endif %}>Como el envío está por confirmar, pagas en línea cuando te avisemos el valor: el enlace de pago te queda en tu pedido.</div>
           </div>
           <div data-mostrar-si="metodo_pago=transferencia">
             {# HU 30: con el envío por confirmar se transfiere después, cuando se conoce el total #}

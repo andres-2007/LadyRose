@@ -115,7 +115,9 @@ document.addEventListener("DOMContentLoaded", function () {
       if (campos[0] && campos[0].type === "checkbox") {
         visible = regla[1] === "no" ? !campos[0].checked : campos[0].checked;
       } else {
-        visible = campos.some(function (c) { return c.checked && c.value === regla[1]; });
+        // HU 12: se pueden poner varios valores separados por "|" (ej. metodo_pago=nequi|pse)
+        var valores = regla[1].split("|");
+        visible = campos.some(function (c) { return c.checked && valores.indexOf(c.value) !== -1; });
       }
       bloque.classList.toggle("oculto", !visible);
     };
@@ -185,6 +187,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (nota) nota.hidden = !porConfirmar;
         if (espera) espera.hidden = !porConfirmar;
         if (ahora) ahora.hidden = porConfirmar;
+        // HU 12: avisos del pago en línea según si el envío ya tiene valor
+        $$("[data-si-envio-por-confirmar]").forEach(function (e) { e.hidden = !porConfirmar; });
+        $$("[data-si-envio-calculado]").forEach(function (e) { e.hidden = porConfirmar; });
         recalcular();
       };
       if (!ciudad) { poner(null); return; }

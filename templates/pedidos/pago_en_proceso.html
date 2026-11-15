@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}Estamos confirmando tu pago{% endblock %}
+{% block cabeza %}<meta http-equiv="refresh" content="5">{% endblock %}
+{% block contenido %}
+<div class="contenedor contenedor--angosto confirmado">
+  <span class="antetitulo">Pedido {{ pago.pedido.numero }}</span>
+  <h1>Estamos confirmando tu pago</h1>
+  <p class="texto-suave">La plataforma de pagos todavía no nos confirma la transacción. Esta página se actualiza sola en unos segundos; no cierres la ventana.</p>
+</div>
+{% endblock %}

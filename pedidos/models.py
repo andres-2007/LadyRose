@@ -154,6 +154,13 @@ class TipoEmpaque(models.Model):
         return self.nombre
 
 
+class PedidoQuerySet(models.QuerySet):
+    def para_produccion(self):
+        """HU 12: los pedidos que esperan el pago en línea, o cuyo pago no se completó,
+        no le aparecen a la diseñadora hasta que el pago quede aprobado."""
+        return self.exclude(estado_pago__in=["en_pasarela", "rechazado"])
+
+
 class Pedido(models.Model):
     class Tipo(models.TextChoices):
         DETAL = "detal", "Al detal"
@@ -269,6 +276,8 @@ class Pedido(models.Model):
     # HU 31: red social desde la que llegó la persona que compró
     canal_origen = models.CharField("Canal de origen", max_length=20, choices=VisitaOrigen.Canal.choices,
                                     blank=True)
+
+    objects = PedidoQuerySet.as_manager()
 
     class Meta:
         ordering = ["-creado"]

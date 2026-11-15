@@ -1,0 +1,28 @@
+/* HU 12: página de la pasarela de pruebas (imita una página de pago externa, por eso no usa estilos.css) */
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100vh; font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: #eef1f6; color: #1d2433; }
+.modo-pruebas { background: #fff4d6; color: #7a5600; text-align: center; font-size: .82rem; padding: 8px 16px; border-bottom: 1px solid #f0dca4; }
+.checkout { width: min(440px, 100% - 32px); margin: 28px auto 40px; background: #fff; border-radius: 16px; box-shadow: 0 20px 50px -30px rgba(29, 36, 51, .45); overflow: hidden; }
+.checkout__comercio { display: flex; align-items: center; gap: 14px; padding: 18px 22px; border-bottom: 1px solid #e6e9f0; }
+.checkout__comercio img { width: 64px; height: auto; }
+.checkout__comercio div { display: flex; flex-direction: column; }
+.checkout__etiqueta { font-size: .75rem; color: #6b7385; text-transform: uppercase; letter-spacing: .06em; }
+.checkout__monto { padding: 22px; text-align: center; background: #f7f8fb; }
+.checkout__monto strong { display: block; font-size: 2.2rem; margin: 4px 0; }
+.checkout__ref { font-size: .8rem; color: #6b7385; }
+.checkout__form { padding: 20px 22px 6px; display: flex; flex-direction: column; gap: 12px; }
+.checkout__metodo { display: flex; align-items: center; gap: 12px; padding: 12px; border: 1px solid #e6e9f0; border-radius: 12px; }
+.checkout__metodo div { display: flex; flex-direction: column; }
+.metodo { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 10px; font-weight: 700; font-size: .85rem; color: #fff; }
+.metodo--nequi { background: #200020; color: #ff2d8a; font-size: 1.2rem; }
+.metodo--pse { background: #0a4f9c; }
+.metodo--bancolombia { background: #fdda24; color: #2c2a29; font-size: 1.2rem; }
+.checkout__campo { display: flex; flex-direction: column; gap: 6px; font-size: .9rem; }
+.checkout__campo input, .checkout__campo select { min-height: 46px; padding: 10px 12px; border: 1px solid #cfd5e2; border-radius: 10px; font: inherit; background: #fff; }
+.checkout__ayuda { margin: 0; font-size: .85rem; color: #6b7385; }
+.checkout__boton { min-height: 50px; border: 0; border-radius: 12px; background: #1d2433; color: #fff; font: inherit; font-weight: 600; font-size: 1rem; cursor: pointer; }
+.checkout__boton:hover { background: #2d3850; }
+.checkout__boton--secundario { background: #fff; color: #b3322f; border: 1px solid #f0c4c3; font-weight: 500; }
+.checkout__boton--secundario:hover { background: #fdf1f1; }
+.checkout__cancelar { background: none; border: 0; color: #6b7385; font: inherit; text-decoration: underline; cursor: pointer; padding: 8px; }
+.checkout__pie { display: flex; flex-direction: column; gap: 2px; padding: 14px 22px 18px; font-size: .78rem; color: #8a91a1; text-align: center; }

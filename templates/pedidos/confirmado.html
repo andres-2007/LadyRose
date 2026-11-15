@@ -7,11 +7,11 @@
   <span class="antetitulo">Pedido {{ pedido.numero }}</span>
   <h1>¡Gracias, {{ pedido.nombre|primer_nombre }}!</h1>
   <p class="texto-suave">Recibimos tu pedido y ya está en la lista de la diseñadora. Te escribimos por WhatsApp para coordinar el envío.
-    {% if pedido.metodo_pago == "transferencia" and pedido.envio_por_confirmar %}{% elif pedido.metodo_pago == "transferencia" %}Primero revisamos el comprobante de tu transferencia.{% else %}Pagas cuando lo recibas.{% endif %}</p>
+    {% if pedido.pago_aprobado %}Tu pago con {{ pedido.get_metodo_pago_display }} quedó aprobado.{% elif pedido.pago_en_linea or pedido.metodo_pago == "transferencia" and pedido.envio_por_confirmar %}{% elif pedido.metodo_pago == "transferencia" %}Primero revisamos el comprobante de tu transferencia.{% else %}Pagas cuando lo recibas.{% endif %}</p>
   {# HU 30 CA 2: el envío quedó por confirmar #}
   {% if pedido.envio_por_confirmar %}
     <div class="aviso aviso--rosa">{% if pedido.ciudad_es_cali %}En Cali el valor del domicilio depende de la hora y la distancia.{% else %}El envío se calcula con Servientrega según el peso.{% endif %}
-      Te avisamos el valor por correo y WhatsApp antes de despachar.{% if pedido.metodo_pago == "transferencia" %} No transfieras todavía: con el aviso te llega el enlace para pagar el total y subir el comprobante.{% endif %}</div>
+      Te avisamos el valor por correo y WhatsApp antes de despachar.{% if pedido.metodo_pago == "transferencia" %} No transfieras todavía: con el aviso te llega el enlace para pagar el total y subir el comprobante.{% elif pedido.pago_en_linea %} Con el aviso te llega el enlace para pagar el total con {{ pedido.get_metodo_pago_display }}.{% endif %}</div>
   {% endif %}
 
   <div class="resumen">

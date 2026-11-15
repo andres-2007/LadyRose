@@ -37,6 +37,10 @@ class EstadoTransaccion:
     FINALES = {APROBADA, RECHAZADA, ANULADA, ERROR}
 
 
+# Cómo llama Wompi a cada método de pago
+TIPO_METODO = {"nequi": "NEQUI", "pse": "PSE", "bancolombia": "BANCOLOMBIA_TRANSFER"}
+
+
 def config():
     return settings.LADYROSE["PASARELA"]
 
@@ -49,6 +53,11 @@ def en_centavos(valor):
 def nueva_referencia(pedido):
     """Referencia única del pago, por ejemplo LR-0012-7K3QF2. Cada intento de pago tiene la suya."""
     return f"{pedido.numero}-{secrets.token_hex(3).upper()}"
+
+
+def nuevo_id_transaccion():
+    """Id de la transacción, con la forma de los de Wompi (por ejemplo 01-1531231271-19365)."""
+    return f"01-{int(time.time())}-{secrets.randbelow(90000) + 10000}"
 
 
 def _sha256(texto):
