@@ -4,7 +4,7 @@ Página web de Ladyrose (bisutería artesanal) hecha en Django para el proyecto 
 
 - Sprint 1: HU 02, 09, 13, 15, 18, 20, 21, 23, 25, 31 y 34.
 - Sprint 2: HU 01, 03, 04, 08, 10, 11, 16, 19, 24 y 26.
-- Sprint 3 (en curso): HU 07.
+- Sprint 3 (en curso): HU 07 y 27.
 
 Equipo: Andres David Duarte y Alejandro Riomaña.
 
@@ -81,7 +81,7 @@ Cada criterio de aceptación tiene su prueba automática:
 python manage.py test
 ```
 
-Tienen que salir 128 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 128.
+Tienen que salir 158 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 158.
 
 Los nombres de las pruebas dicen la HU y el CA que revisan, por ejemplo `HU04EstadosTests.test_ca2_terminado_pasa_a_listos_para_envio`.
 
@@ -150,6 +150,7 @@ Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la pág
 | HU | Qué hace | Archivos principales |
 |---|---|---|
 | 07 | Tiempo de fabricación mínimo y máximo en el producto y en su ficha; tabla de tiempos de envío por ciudad en el panel; en el pago, al escribir la ciudad, se ve el tiempo de envío y las fechas estimadas de entrega (en días hábiles, sin festivos de Colombia); aviso de la transportadora para otras ciudades | `catalogo/models.py`, `pedidos/entregas.py`, `core/festivos.py`, `templates/pedidos/_entrega_estimada.html` |
+| 27 | Cuentas de cliente (nombre, correo, contraseña, WhatsApp y cumpleaños opcionales); códigos de descuento por cliente con porcentaje o valor, vencimiento y un solo uso; código en el pago; en el panel, cumpleaños de los próximos 7 días, clientes que ya compraron y envío del código por correo o WhatsApp con su nombre | `clientes/` (modelos, panel y pruebas), `pedidos/views.py`, `templates/clientes/`, `templates/pedidos/pagar.html` |
 
 Para la HU 07:
 
@@ -157,11 +158,20 @@ Para la HU 07:
 - Si en un pedido hay varios productos, cuenta el que más se demora en fabricarse, porque se hacen al mismo tiempo.
 - Los festivos de Colombia se calculan solos para cualquier año (Ley Emiliani y Semana Santa), en `core/festivos.py`. La fecha límite del panel de producción (HU 01) también los salta.
 
-Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `cursos`, `cotizaciones`, `pedidos` y `core`).
+Para la HU 27:
+
+- **Para comprar y para inscribirse a un curso hay que tener cuenta.** El carrito sí se puede llenar sin cuenta; al ir a pagar se pide iniciar sesión o crearla, y el carrito se conserva. Los datos de la cuenta llenan el pago y la inscripción.
+- El cliente crea su cuenta en `/cuenta/crear/`, inicia sesión en `/cuenta/ingresar/` y ve sus códigos y pedidos en **Mi cuenta** (`/cuenta/`), con el ícono de persona del encabezado. Por ahora no hay recuperación de contraseña.
+- La dueña ve a los clientes en **Clientes y descuentos › Clientes**. Arriba tiene dos accesos: los que cumplen años en los próximos 7 días y los que ya compraron. Cuentan como compras los pedidos hechos con la cuenta y también los que hizo antes como invitado con el mismo correo.
+- En cada cliente aparece **Crear código** (el código se propone solo, como `CUMPLE-PAULA-7K3Q`, y se puede cambiar) o **Enviar** si ya tiene uno disponible. Al enviar se ve el mensaje con su nombre y se elige correo o WhatsApp. Si el cliente no dejó WhatsApp, se usa el de su último pedido.
+- El código se escribe en el paso de pago. Solo funciona con la cuenta a la que se asignó, hasta su fecha de vencimiento (incluida) y una sola vez: queda usado al confirmar el pedido. Se descuenta sobre los productos (también si están en oferta), no sobre el empaque de regalo, y nunca deja el total en negativo.
+- `cargar_datos_demo` crea 4 clientes de ejemplo con la contraseña `Cliente123*` (por ejemplo `mariana@correo.com`, que cumple años en 3 días y tiene el código `CUMPLE-MARIANA-DEMO`). Con `--reiniciar` solo se borran esas cuentas de ejemplo, nunca las de clientes reales.
+
+Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `clientes`, `cursos`, `cotizaciones`, `pedidos` y `core`).
 
 ## Roles del panel
 
-- Dueña: puede todo. Crea, edita y elimina productos, categorías, colecciones y cursos; maneja pedidos, empaques, inscripciones, la configuración de la tienda, la historia y las visitas por canal.
+- Dueña: puede todo. Crea, edita y elimina productos, categorías, colecciones y cursos; maneja pedidos, empaques, inscripciones, la configuración de la tienda, la historia y las visitas por canal; ve a los clientes y crea y envía los códigos de descuento (HU 27).
 - Diseñadora de accesorios: crea y edita productos, categorías y colecciones, pero no puede eliminarlos. Los cursos solo los ve. Ve las cotizaciones y, en el panel de producción, cambia el estado de los pedidos y le escribe al cliente.
 
 Los grupos se crean solos al correr `migrate`.

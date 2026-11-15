@@ -3,6 +3,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import permission_required
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from .excel import libro_inscritos
 from .forms import InscripcionForm
@@ -15,10 +16,22 @@ def lista(request):
     return render(request, "cursos/lista.html", {"cursos": cursos, "realizados": realizados})
 
 
+def _datos_cuenta(usuario):
+    """HU 27: la inscripción se llena con los datos de la cuenta."""
+    if not usuario.is_authenticated:
+        return {}
+    cliente = getattr(usuario, "cliente", None)
+    return {"nombre": usuario.get_full_name() or usuario.first_name, "correo": usuario.email,
+            "whatsapp": cliente.whatsapp_contacto if cliente else ""}
+
+
 def detalle(request, slug):
     curso = get_object_or_404(Curso.objects.publicados().prefetch_related("fotos"), slug=slug)
-    form = InscripcionForm(curso=curso)
+    form = InscripcionForm(curso=curso, initial=_datos_cuenta(request.user))
     if request.method == "POST":
+        # HU 27: para inscribirse hay que tener cuenta
+        if not request.user.is_authenticated:
+            return redirect(f"{reverse('clientes:ingresar')}?next={curso.get_absolute_url()}")
         # Los cursos que ya se realizaron no reciben inscripciones.
         if curso.realizado:
             messages.error(request, "Este curso ya se realizó. Escríbenos para conocer las próximas fechas.")
@@ -33,7 +46,9 @@ def detalle(request, slug):
             datos["modalidad"] = curso.modalidades_permitidas[0]
         form = InscripcionForm(datos, curso=curso)
         if form.is_valid():
-            inscripcion = form.save()
+            inscripcion = form.save(commit=False)
+            inscripcion.usuario = request.user
+            inscripcion.save()
             messages.success(
                 request,
                 "¡Listo! Recibimos tu inscripción. Te escribiremos por WhatsApp para confirmar el pago "

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block titulo %}Crear tu cuenta{% endblock %}
+{% block contenido %}
+<div class="contenedor contenedor--angosto cuenta-pagina">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Tu cuenta Ladyrose</span>
+    <h1>Crea tu cuenta</h1>
+    <p>La necesitas para comprar y para inscribirte a los cursos. Con ella también recibes descuentos personalizados, como el de tu cumpleaños.</p>
+  </header>
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% if form.errors %}<div class="errores-generales" role="alert">Revisa los campos marcados en rojo.</div>{% endif %}
+    <section class="bloque-form">
+      <div class="campos dos-columnas">
+        {% include "partials/campo.html" with campo=form.nombre clase="ancho" %}
+        {% include "partials/campo.html" with campo=form.correo %}
+        {% include "partials/campo.html" with campo=form.whatsapp %}
+        {% include "partials/campo.html" with campo=form.cumpleanos %}
+        <div></div>
+        {% include "partials/campo.html" with campo=form.password1 %}
+        {% include "partials/campo.html" with campo=form.password2 %}
+      </div>
+    </section>
+    <button class="boton boton--rosa boton--bloque" type="submit">Crear mi cuenta</button>
+    <p class="centrado texto-suave">¿Ya tienes cuenta? <a href="{% url 'clientes:ingresar' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Inicia sesión</a></p>
+  </form>
+</div>
+{% endblock %}

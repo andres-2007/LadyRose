@@ -15,6 +15,7 @@
       <div class="resumen__fila"><span>{{ d.referencia }}{% if d.talla %} · {{ d.talla }}{% endif %}{% if d.color %} · {{ d.color }}{% endif %} × {{ d.cantidad }}</span><span>{{ d.subtotal|pesos }}</span></div>
     {% endfor %}
     {% if pedido.empaque %}<div class="resumen__fila"><span>{{ pedido.empaque.nombre }}</span><span>{{ pedido.costo_empaque|pesos }}</span></div>{% endif %}
+    {% if pedido.descuento %}<div class="resumen__fila resumen__fila--descuento"><span>Descuento ({{ pedido.codigo_descuento.codigo }})</span><span>- {{ pedido.descuento|pesos }}</span></div>{% endif %}
     <div class="resumen__fila resumen__fila--total"><span>Total</span><span>{{ pedido.total|pesos }}</span></div>
     <hr class="separador">
     <dl class="lista-datos">

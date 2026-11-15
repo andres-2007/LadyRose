@@ -6,6 +6,8 @@ HU 01, 03, 04 y 10: panel de producción de la diseñadora de accesorios.
 """
 import unicodedata
 
+from django.conf import settings
+
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator, MaxValueValidator, MinValueValidator
 from django.db import models
@@ -154,6 +156,15 @@ class Pedido(models.Model):
     estado_actualizado = models.DateTimeField("Último cambio de estado", null=True, blank=True)
     estado_envio = models.CharField("Envío", max_length=20, choices=EstadoEnvio.choices,
                                     default=EstadoEnvio.POR_DESPACHAR)
+
+    # ----- HU 27: cuenta del cliente y código de descuento -----
+    cliente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name="pedidos", verbose_name="Cuenta del cliente")
+    codigo_descuento = models.OneToOneField(
+        "clientes.CodigoDescuento", on_delete=models.SET_NULL, null=True, blank=True, related_name="pedido",
+        verbose_name="Código de descuento",
+    )
+    descuento = models.DecimalField("Descuento", max_digits=12, decimal_places=0, default=0)
 
     # HU 31: red social desde la que llegó la persona que compró
     canal_origen = models.CharField("Canal de origen", max_length=20, choices=VisitaOrigen.Canal.choices,

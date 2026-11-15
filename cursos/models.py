@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
 from django.core.validators import MinValueValidator
@@ -163,6 +164,9 @@ class Inscripcion(models.Model):
     modalidad = models.CharField("Modalidad", max_length=20, choices=Modalidad.choices, blank=True)
     estado_pago = models.CharField("Estado de pago", max_length=20, choices=EstadoPago.choices,
                                    default=EstadoPago.PENDIENTE)
+    # HU 27: para inscribirse hay que tener cuenta (las que crea la dueña en el panel pueden no tenerla)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name="inscripciones", verbose_name="Cuenta del cliente")
     fecha = models.DateTimeField("Fecha de inscripción", auto_now_add=True)
     enlace_enviado = models.DateTimeField("Enlace enviado", null=True, blank=True)
 

@@ -52,15 +52,16 @@ class PedidoAdmin(admin.ModelAdmin):
     date_hierarchy = "creado"
     inlines = [DetallePedidoInline]
     readonly_fields = ("numero_pedido", "creado", "ver_comprobante", "abrir_en_panel", "nota_destacada",
-                       "subtotal", "costo_empaque", "total", "canal_origen", "estado_actualizado")
+                       "subtotal", "costo_empaque", "total", "canal_origen", "estado_actualizado",
+                       "cliente", "codigo_descuento", "descuento")
     fieldsets = (
         (None, {"fields": ("numero_pedido", "creado", "abrir_en_panel")}),
-        ("Quien compra", {"fields": ("nombre", "correo", "telefono", "whatsapp_igual", "whatsapp")}),
+        ("Quien compra", {"fields": ("cliente", "nombre", "correo", "telefono", "whatsapp_igual", "whatsapp")}),
         ("Datos de envío", {"fields": ("enviar_a_otra_persona", "nombre_recibe", "telefono_recibe",
                                        "direccion", "barrio", "ciudad", "indicaciones", "estado_envio")}),
         ("Regalo", {"fields": ("empaque", "nota_destacada", "nota", "motivo")}),
         ("Pago", {"fields": ("metodo_pago", "comprobante", "ver_comprobante", "estado_pago",
-                             "subtotal", "costo_empaque", "total")}),
+                             "subtotal", "codigo_descuento", "descuento", "costo_empaque", "total")}),
         ("Producción", {"fields": ("cotizacion", "tecnica", "dias_elaboracion", "fecha_limite",
                                    "estado_produccion", "estado_actualizado", "canal_origen")}),
     )

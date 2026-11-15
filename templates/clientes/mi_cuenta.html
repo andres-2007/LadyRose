@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load ladyrose %}
+{% block titulo %}Mi cuenta{% endblock %}
+{% block contenido %}
+<div class="contenedor contenedor--angosto cuenta-pagina">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Mi cuenta</span>
+    <h1>Hola, {{ user.first_name|default:user.username }}</h1>
+    <p>{{ user.email }}{% if cliente.whatsapp %} · WhatsApp {{ cliente.whatsapp }}{% endif %}{% if cliente.cumpleanos %} · Cumpleaños: {{ cliente.cumpleanos|date:"j \d\e F"|lower }}{% endif %}</p>
+  </header>
+
+  {# HU 27: códigos de descuento asignados a esta cuenta #}
+  <section class="bloque-form">
+    <h2>Mis códigos de descuento</h2>
+    {% if codigos %}
+      <ul class="codigos">
+        {% for c in codigos %}
+          <li class="codigo">
+            <span class="codigo__texto">{{ c.codigo }}</span>
+            <span><strong>{{ c.descuento_texto }}</strong> en tus productos · válido hasta el {{ c.vence|date:"j \d\e F \d\e Y"|lower }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="campo__ayuda">Escríbelo en el paso de pago. Cada código se usa una sola vez y solo funciona con tu cuenta.</p>
+    {% else %}
+      <p class="texto-suave">Por ahora no tienes códigos. Cuando Ladyrose te envíe uno, lo verás aquí.</p>
+    {% endif %}
+  </section>
+
+  <section class="bloque-form">
+    <h2>Mis pedidos</h2>
+    {% if pedidos %}
+      {% for p in pedidos %}
+        <div class="resumen__fila"><span>{{ p.numero }} · {{ p.creado|date:"j M Y" }}</span><span>{{ p.total|pesos }}</span></div>
+      {% endfor %}
+    {% else %}
+      <p class="texto-suave">Todavía no has hecho pedidos. <a href="{% url 'catalogo:lista' %}">Mira el catálogo</a>.</p>
+    {% endif %}
+  </section>
+
+  <form method="post" action="{% url 'clientes:salir' %}">
+    {% csrf_token %}
+    <button class="boton boton--borde" type="submit">Cerrar sesión</button>
+  </form>
+</div>
+{% endblock %}

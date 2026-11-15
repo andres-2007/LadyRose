@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block titulo %}Iniciar sesión{% endblock %}
+{% block contenido %}
+<div class="contenedor cuenta-pagina cuenta-pagina--corta">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Tu cuenta Ladyrose</span>
+    <h1>Inicia sesión</h1>
+    {% if next %}<p>Para continuar necesitas iniciar sesión o crear tu cuenta.</p>{% endif %}
+  </header>
+  <form method="post" class="formulario" novalidate>
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    {% for e in form.non_field_errors %}<div class="errores-generales" role="alert">{{ e }}</div>{% endfor %}
+    <section class="bloque-form">
+      <div class="campos">
+        {% include "partials/campo.html" with campo=form.correo %}
+        {% include "partials/campo.html" with campo=form.password %}
+      </div>
+    </section>
+    <button class="boton boton--bloque" type="submit">Iniciar sesión</button>
+    <p class="centrado texto-suave">¿No tienes cuenta? <a href="{% url 'clientes:registro' %}{% if next %}?next={{ next|urlencode }}{% endif %}">Créala aquí</a></p>
+  </form>
+</div>
+{% endblock %}

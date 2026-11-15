@@ -132,7 +132,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var recalcular = function () {
       var elegido = $('input[name="empaque"]:checked');
       var costo = elegido ? parseInt(elegido.getAttribute("data-costo") || "0", 10) : 0;
-      totalPago.textContent = formato(base + costo);
+      var descuento = parseInt(totalPago.getAttribute("data-descuento") || "0", 10);  // HU 27
+      totalPago.textContent = formato(base - descuento + costo);
       if (filaEmpaque) {
         filaEmpaque.classList.toggle("oculto", !costo);
         $("span:last-child", filaEmpaque).textContent = formato(costo);
@@ -140,6 +141,43 @@ document.addEventListener("DOMContentLoaded", function () {
     };
     $$('input[name="empaque"]').forEach(function (r) { r.addEventListener("change", recalcular); });
     recalcular();
+
+    /* HU 27: aplicar el código de descuento sin recargar la página */
+    var bloqueDescuento = $("[data-descuento]"), campoCodigo = $("[data-codigo-descuento]");
+    var filaDescuento = $("[data-fila-descuento]");
+    if (bloqueDescuento && campoCodigo) {
+      var mostrarMensaje = function (texto, ok) {
+        var anterior = $("[data-descuento-mensaje]", bloqueDescuento);
+        if (anterior) anterior.remove();
+        var p = document.createElement("p");
+        p.setAttribute("data-descuento-mensaje", "");
+        p.className = "descuento-pago__mensaje descuento-pago__mensaje--" + (ok ? "ok" : "error");
+        p.textContent = texto;
+        bloqueDescuento.appendChild(p);
+        bloqueDescuento.classList.toggle("campo--error", !ok);
+      };
+      var ponerDescuento = function (valor) {
+        totalPago.setAttribute("data-descuento", valor);
+        if (filaDescuento) {
+          filaDescuento.classList.toggle("oculto", !valor);
+          $("span:last-child", filaDescuento).textContent = "- " + formato(valor);
+        }
+        recalcular();
+      };
+      var aplicar = function () {
+        var codigo = campoCodigo.value.trim();
+        if (!codigo) { ponerDescuento(0); mostrarMensaje("Escribe el código de descuento.", false); return; }
+        fetch(bloqueDescuento.getAttribute("data-url") + "?codigo=" + encodeURIComponent(codigo), { headers: { "x-requested-with": "fetch" } })
+          .then(function (r) { return r.json(); })
+          .then(function (r) {
+            ponerDescuento(r.ok ? r.descuento : 0);
+            mostrarMensaje(r.mensaje, r.ok);
+          });
+      };
+      $("[data-aplicar-codigo]").addEventListener("click", aplicar);
+      campoCodigo.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); aplicar(); } });
+      campoCodigo.addEventListener("input", function () { if (totalPago.getAttribute("data-descuento") !== "0") ponerDescuento(0); });
+    }
   }
 
   /* HU 04: cambiar el estado del pedido sin salir del panel */
