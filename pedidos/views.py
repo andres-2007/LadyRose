@@ -7,13 +7,14 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
 
-from catalogo.models import Producto, TallaProducto
+from catalogo.models import Producto, TallaProducto, texto_dias_habiles
 
 from .carrito import Carrito, ErrorCarrito
+from .entregas import estimar_entrega, tiempos_fabricacion
 from .forms import AvisoClienteForm, PedidoForm
-from .models import DetallePedido, Pedido, TipoEmpaque
+from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
 ESTADOS_SELECTOR = [
     (Pedido.EstadoProduccion.PENDIENTE, "Pendiente"),
@@ -95,11 +96,26 @@ def pagar(request):
         confirmados = request.session.get("pedidos_confirmados", [])
         request.session["pedidos_confirmados"] = confirmados + [pedido.pk]
         return redirect("pedidos:confirmado", pk=pedido.pk)
+    productos = [i["producto"] for i in items]
     return render(request, "pedidos/pagar.html", {
         "form": form, "items": items, "subtotal": subtotal,
         "empaques": TipoEmpaque.objects.filter(activo=True),
         "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
+        # HU 07: tiempo de fabricación del carrito y, si ya hay ciudad, la fecha estimada
+        "estimado": estimar_entrega(productos, form["ciudad"].value()),
+        "tiempo_fabricacion_carrito": texto_dias_habiles(*tiempos_fabricacion(productos)),
+        "ciudades_envio": TiempoEnvio.objects.values_list("ciudad", flat=True),
     })
+
+
+@require_GET
+def estimar(request):
+    """HU 07 CA 2 y CA 3: tiempo de envío y fechas estimadas para la ciudad que escribe el cliente."""
+    productos = [i["producto"] for i in Carrito(request).items()]
+    estimado = estimar_entrega(productos, request.GET.get("ciudad", ""))
+    if not productos or estimado is None:
+        return JsonResponse({"ok": False})
+    return JsonResponse({"ok": True, **estimado.como_dict()})
 
 
 def _crear_pedido(request, form, items, subtotal):

@@ -4,27 +4,64 @@ HU 24: datos completos para el despacho.
 HU 11: empaque de regalo, nota y envío a otra persona.
 HU 01, 03, 04 y 10: panel de producción de la diseñadora de accesorios.
 """
-from datetime import timedelta
+import unicodedata
 
-from django.core.validators import MaxLengthValidator, MinValueValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 
 from catalogo.models import Producto
+from core.festivos import sumar_dias_habiles  # noqa: F401  (HU 01 y HU 07: salta fines de semana y festivos)
 from core.models import VisitaOrigen
 from cotizaciones.models import SolicitudCotizacion
 
 MAX_NOTA = 200
 
 
-def sumar_dias_habiles(fecha, dias):
-    """Suma días de lunes a viernes (la fecha límite no cae en fin de semana)."""
-    while dias > 0:
-        fecha += timedelta(days=1)
-        if fecha.weekday() < 5:
-            dias -= 1
-    return fecha
+def normalizar_ciudad(texto):
+    """HU 07: "  BOGOTÁ " y "bogota" son la misma ciudad."""
+    texto = unicodedata.normalize("NFKD", texto or "")
+    texto = "".join(c for c in texto if not unicodedata.combining(c))
+    return " ".join(texto.lower().replace(".", " ").split())
+
+
+class TiempoEnvio(models.Model):
+    """HU 07: tiempo estimado de envío según la ciudad de destino, administrable por la dueña."""
+
+    ciudad = models.CharField("Ciudad", max_length=100, unique=True)
+    ciudad_normalizada = models.CharField(max_length=100, unique=True, editable=False)
+    dias_min = models.PositiveSmallIntegerField(
+        "Mínimo (días hábiles)", validators=[MaxValueValidator(30)],
+        help_text="Puede ser 0 si se entrega el mismo día que la pieza queda lista.",
+    )
+    dias_max = models.PositiveSmallIntegerField("Máximo (días hábiles)", validators=[MaxValueValidator(30)])
+    por_transportadora = models.BooleanField(
+        "Se envía por transportadora", default=True,
+        help_text="Desmárquelo si Ladyrose lo entrega directamente (por ejemplo, domicilio en Cali). "
+                  "Si va por transportadora, se avisa al cliente que el tiempo es aproximado.",
+    )
+
+    class Meta:
+        ordering = ["ciudad"]
+        verbose_name = "tiempo de envío por ciudad"
+        verbose_name_plural = "tiempos de envío por ciudad"
+
+    def __str__(self):
+        return f"{self.ciudad}: {self.dias_min} a {self.dias_max} días hábiles"
+
+    def clean(self):
+        if self.dias_min is not None and self.dias_max is not None and self.dias_min > self.dias_max:
+            raise ValidationError({"dias_min": "El mínimo no puede ser mayor que el máximo."})
+        normalizada = normalizar_ciudad(self.ciudad)
+        if TiempoEnvio.objects.filter(ciudad_normalizada=normalizada).exclude(pk=self.pk).exists():
+            raise ValidationError({"ciudad": "Esa ciudad ya está en la tabla."})
+
+    def save(self, *args, **kwargs):
+        self.ciudad = " ".join(self.ciudad.split())
+        self.ciudad_normalizada = normalizar_ciudad(self.ciudad)
+        super().save(*args, **kwargs)
 
 
 class TipoEmpaque(models.Model):

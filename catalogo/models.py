@@ -1,5 +1,5 @@
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -14,6 +14,14 @@ AVISO_CUIDADOS = (
 TEXTO_PH = (
     "El pH de cada piel es diferente y puede influir en la durabilidad y el color del metal."
 )
+
+
+def texto_dias_habiles(minimo, maximo):
+    """HU 07: "De 2 a 3 días hábiles", "3 días hábiles" o "1 día hábil"."""
+    minimo = minimo or maximo
+    if minimo == maximo:
+        return f"{maximo} día hábil" if maximo == 1 else f"{maximo} días hábiles"
+    return f"De {minimo} a {maximo} días hábiles"
 
 
 def _slug_unico(instancia, texto):
@@ -119,9 +127,17 @@ class Producto(models.Model):
     # HU 01: técnica y tiempo de elaboración para organizar los pedidos
     tecnica = models.CharField("Técnica", max_length=100, blank=True,
                                help_text="Por ejemplo: alambrismo, resina, tejido Miyuki, macramé.")
+    # HU 07: tiempo de fabricación en días hábiles (mínimo y máximo).
+    # El máximo es el mismo dato que usa la HU 01 para la fecha límite del pedido.
+    dias_fabricacion_min = models.PositiveSmallIntegerField(
+        "Tiempo de fabricación mínimo", default=2,
+        validators=[MinValueValidator(1, "Debe ser de al menos 1 día hábil."), MaxValueValidator(60)],
+        help_text="Días hábiles. Si siempre toma lo mismo, ponga el mismo número en el mínimo y el máximo.",
+    )
     dias_elaboracion = models.PositiveSmallIntegerField(
-        "Días de elaboración", default=3,
-        help_text="Días hábiles que toma hacer la pieza. Se usa para la fecha límite del pedido.",
+        "Tiempo de fabricación máximo", default=3,
+        validators=[MinValueValidator(1, "Debe ser de al menos 1 día hábil."), MaxValueValidator(60)],
+        help_text="Días hábiles. Se usa también para la fecha límite del pedido en el panel de producción.",
     )
     # HU 16: un producto puede estar en varias colecciones
     colecciones = models.ManyToManyField(Coleccion, blank=True, related_name="productos",
@@ -156,6 +172,10 @@ class Producto(models.Model):
         super().save(*args, **kwargs)
 
     def clean(self):
+        # HU 07: el tiempo mínimo de fabricación no puede ser mayor que el máximo
+        if (self.dias_fabricacion_min and self.dias_elaboracion
+                and self.dias_fabricacion_min > self.dias_elaboracion):
+            raise ValidationError({"dias_fabricacion_min": "El tiempo mínimo no puede ser mayor que el máximo."})
         if self.precio_oferta is not None:
             if not (self.oferta_inicio and self.oferta_fin):
                 raise ValidationError("Para crear una oferta indique la fecha de inicio y la de fin.")
@@ -187,6 +207,11 @@ class Producto(models.Model):
     def foto_secundaria(self):
         fotos = list(self.fotos.all())
         return fotos[1] if len(fotos) > 1 else None
+
+    @property
+    def tiempo_fabricacion(self):
+        """HU 07 CA 1: texto como "De 2 a 3 días hábiles" o "3 días hábiles"."""
+        return texto_dias_habiles(self.dias_fabricacion_min, self.dias_elaboracion)
 
     @property
     def lista_colores(self):

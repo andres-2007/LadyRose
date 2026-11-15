@@ -43,7 +43,9 @@ class PedidoForm(forms.ModelForm):
             "whatsapp": forms.TextInput(attrs={"inputmode": "tel", "placeholder": "3001234567"}),
             "direccion": forms.TextInput(attrs={"autocomplete": "street-address", "placeholder": "Calle 5 # 38-25"}),
             "barrio": forms.TextInput(attrs={"placeholder": "San Fernando"}),
-            "ciudad": forms.TextInput(attrs={"autocomplete": "address-level2", "placeholder": "Cali"}),
+            # HU 07: al escribir la ciudad se calcula el tiempo de envío (ver static/js/main.js)
+            "ciudad": forms.TextInput(attrs={"autocomplete": "address-level2", "placeholder": "Cali",
+                                             "list": "ciudades-envio", "data-ciudad-entrega": ""}),
             "nombre_recibe": forms.TextInput(),
             "telefono_recibe": forms.TextInput(attrs={"inputmode": "tel"}),
             "nota": forms.Textarea(attrs={"rows": 3, "maxlength": MAX_NOTA, "data-contador": MAX_NOTA,

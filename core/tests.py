@@ -60,7 +60,9 @@ class HU25MontoMinimoTests(PruebaConArchivos):
         for valor in ("0", "abc"):
             r = self.client.post(url, {"monto_minimo_mayorista": valor})
             self.assertEqual(r.status_code, 200)
-        r = self.client.post(url, {"monto_minimo_mayorista": "250000"})
+        # La configuración también guarda el tiempo de envío a otras ciudades (HU 07)
+        r = self.client.post(url, {"monto_minimo_mayorista": "250000",
+                                   "envio_otras_ciudades_min": "3", "envio_otras_ciudades_max": "6"})
         self.assertEqual(r.status_code, 302)
         self.assertEqual(ConfiguracionTienda.obtener().monto_minimo_mayorista, Decimal("250000"))
 

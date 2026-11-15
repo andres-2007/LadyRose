@@ -28,7 +28,13 @@ class UnicoAdmin(admin.ModelAdmin):
 
 @admin.register(ConfiguracionTienda)
 class ConfiguracionTiendaAdmin(UnicoAdmin):
-    fields = ("monto_minimo_mayorista", "actualizado")
+    fieldsets = (
+        (None, {"fields": ("monto_minimo_mayorista", "actualizado")}),
+        ("Tiempo de envío a otras ciudades (HU 07)", {
+            "fields": (("envio_otras_ciudades_min", "envio_otras_ciudades_max"),),
+            "description": "Se usa cuando la ciudad del cliente no está en Pedidos › Tiempos de envío por ciudad.",
+        }),
+    )
     readonly_fields = ("actualizado",)
 
 

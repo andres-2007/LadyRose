@@ -66,7 +66,9 @@ class ProductoAdmin(admin.ModelAdmin):
     inlines = [FotoProductoInline, TallaProductoInline]
     fieldsets = (
         (None, {"fields": ("nombre", "categoria", "colecciones", "descripcion", "precio", "visible")}),
-        ("Fabricación", {"fields": ("material", "colores", "tecnica", "dias_elaboracion")}),
+        ("Fabricación", {"fields": ("material", "colores", "tecnica", ("dias_fabricacion_min", "dias_elaboracion")),
+                         "description": "El tiempo de fabricación se muestra en la ficha del producto y se suma al "
+                                        "tiempo de envío para calcular cuándo recibe el cliente (HU 07)."}),
         ("Pieza única", {"fields": ("pieza_unica", "vendida"),
                          "description": "Una pieza única vendida pasa sola a la Galería de piezas vendidas."}),
         ("Oferta", {"fields": ("precio_oferta", "oferta_inicio", "oferta_fin")}),

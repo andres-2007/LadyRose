@@ -37,6 +37,7 @@
           {% include "partials/campo.html" with campo=form.direccion clase="ancho" %}
           {% include "partials/campo.html" with campo=form.barrio %}
           {% include "partials/campo.html" with campo=form.ciudad %}
+          {% include "pedidos/_entrega_estimada.html" %}
           {% include "partials/campo.html" with campo=form.indicaciones clase="ancho" %}
           <label class="casilla casilla--destacada ancho">{{ form.enviar_a_otra_persona }}
             <span><strong>Es un regalo: enviarlo a otra persona</strong><br><span class="texto-suave">Lo llevamos directo a quien lo va a recibir.</span></span>
