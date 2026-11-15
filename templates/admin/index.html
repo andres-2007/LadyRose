@@ -1,0 +1,47 @@
+{% extends "admin/index.html" %}
+{% load ladyrose %}
+{% block content %}
+{% resumen_panel as resumen %}
+{% if resumen %}
+{# HU 22: resumen de cómo va el negocio al entrar al panel #}
+<section class="lr-tablero" aria-label="Resumen del negocio">
+  <div class="lr-tablero__cabecera">
+    <h2>Así va Ladyrose</h2>
+    <span>Datos al {{ resumen.generado|date:"j \d\e F"|lower }}, {{ resumen.generado|date:"g:i a" }}</span>
+  </div>
+  <div class="lr-tarjetas">
+    {% if resumen.pedidos %}
+    <div class="lr-tarjeta">
+      <span class="lr-tarjeta__titulo">Pedidos por despachar</span>
+      <strong class="lr-tarjeta__numero">{{ resumen.pedidos.total }}</strong>
+      <span class="lr-tarjeta__detalle">{% if resumen.pedidos.listos %}{{ resumen.pedidos.listos }} ya terminado{{ resumen.pedidos.listos|pluralize }}, listo{{ resumen.pedidos.listos|pluralize }} para enviar{% else %}Ninguno terminado todavía{% endif %}</span>
+    </div>
+    {% endif %}
+    {% if resumen.cotizaciones %}
+    <div class="lr-tarjeta {% if resumen.cotizaciones.atrasadas %}lr-tarjeta--alerta{% endif %}">
+      <span class="lr-tarjeta__titulo">Cotizaciones sin responder</span>
+      <strong class="lr-tarjeta__numero">{{ resumen.cotizaciones.total }}</strong>
+      <span class="lr-tarjeta__detalle">{% if resumen.cotizaciones.atrasadas %}{{ resumen.cotizaciones.atrasadas }} con más de 24 horas hábiles{% elif resumen.cotizaciones.total %}Todas dentro del tiempo de respuesta{% else %}Estás al día{% endif %}</span>
+    </div>
+    {% endif %}
+    {% if resumen.visitas_hoy %}
+    <div class="lr-tarjeta lr-tarjeta--visitas">
+      <span class="lr-tarjeta__titulo">Visitas de hoy</span>
+      <strong class="lr-tarjeta__numero">{{ resumen.visitas_hoy.total }}</strong>
+      <ul class="lr-canales">
+        {% for c in resumen.visitas_hoy.canales %}<li><span>{{ c.nombre }}</span><span>{{ c.total }}</span></li>{% endfor %}
+      </ul>
+    </div>
+    <div class="lr-tarjeta lr-tarjeta--visitas">
+      <span class="lr-tarjeta__titulo">Visitas de {{ resumen.generado|date:"F" }}</span>
+      <strong class="lr-tarjeta__numero">{{ resumen.visitas_mes.total }}</strong>
+      <ul class="lr-canales">
+        {% for c in resumen.visitas_mes.canales %}<li><span>{{ c.nombre }}</span><span>{{ c.total }}</span></li>{% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+{{ block.super }}
+{% endblock %}

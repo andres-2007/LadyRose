@@ -51,3 +51,28 @@ def actual(context, prefijo, exacto=False):
 @register.filter
 def primer_nombre(nombre):
     return (nombre or "").split(" ")[0]
+
+
+@register.simple_tag(takes_context=True)
+def resumen_panel(context):
+    """HU 22: datos de las tarjetas del panel principal.
+
+    Cada tarjeta sale solo si el usuario puede ver esos datos (las visitas son solo para la dueña).
+    Se calcula cada vez que se abre la página, así que siempre está al día (CA 4).
+    """
+    from django.utils import timezone
+
+    from core import resumen
+
+    usuario = context["request"].user
+    datos = {}
+    if usuario.has_perm("pedidos.view_pedido"):
+        datos["pedidos"] = resumen.resumen_pedidos()
+    if usuario.has_perm("cotizaciones.view_solicitudcotizacion"):
+        datos["cotizaciones"] = resumen.resumen_cotizaciones()
+    if usuario.has_perm("core.view_visitaorigen"):
+        datos["visitas_hoy"] = resumen.visitas_hoy()
+        datos["visitas_mes"] = resumen.visitas_mes()
+    if datos:
+        datos["generado"] = timezone.localtime()
+    return datos
