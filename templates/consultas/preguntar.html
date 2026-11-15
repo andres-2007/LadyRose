@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load consultas %}
+{% block titulo %}Pregúntanos sobre {{ objeto.nombre }}{% endblock %}
+{% block contenido %}
+<div class="contenedor contenedor--angosto" style="padding-bottom:64px">
+  <header class="cabecera-pagina">
+    <span class="antetitulo">Pregúntanos</span>
+    <h1>{{ objeto.nombre }}</h1>
+    <p><a href="{{ objeto.get_absolute_url }}">Volver</a></p>
+  </header>
+  <div class="errores-generales" role="alert">Revisa los campos marcados en rojo.</div>
+  {% with form_pregunta=form %}{% formulario_pregunta objeto True %}{% endwith %}
+</div>
+{% endblock %}

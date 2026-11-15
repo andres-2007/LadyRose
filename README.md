@@ -4,7 +4,7 @@ Página web de Ladyrose (bisutería artesanal) hecha en Django para el proyecto 
 
 - Sprint 1: HU 02, 09, 13, 15, 18, 20, 21, 23, 25, 31 y 34.
 - Sprint 2: HU 01, 03, 04, 08, 10, 11, 16, 19, 24 y 26.
-- Sprint 3 (en curso): HU 07 y 27.
+- Sprint 3 (en curso): HU 07, 27 y 28.
 
 Equipo: Andres David Duarte y Alejandro Riomaña.
 
@@ -81,7 +81,7 @@ Cada criterio de aceptación tiene su prueba automática:
 python manage.py test
 ```
 
-Tienen que salir 158 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 158.
+Tienen que salir 183 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 183.
 
 Los nombres de las pruebas dicen la HU y el CA que revisan, por ejemplo `HU04EstadosTests.test_ca2_terminado_pasa_a_listos_para_envio`.
 
@@ -151,6 +151,7 @@ Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la pág
 |---|---|---|
 | 07 | Tiempo de fabricación mínimo y máximo en el producto y en su ficha; tabla de tiempos de envío por ciudad en el panel; en el pago, al escribir la ciudad, se ve el tiempo de envío y las fechas estimadas de entrega (en días hábiles, sin festivos de Colombia); aviso de la transportadora para otras ciudades | `catalogo/models.py`, `pedidos/entregas.py`, `core/festivos.py`, `templates/pedidos/_entrega_estimada.html` |
 | 27 | Cuentas de cliente (nombre, correo, contraseña, WhatsApp y cumpleaños opcionales); códigos de descuento por cliente con porcentaje o valor, vencimiento y un solo uso; código en el pago; en el panel, cumpleaños de los próximos 7 días, clientes que ya compraron y envío del código por correo o WhatsApp con su nombre | `clientes/` (modelos, panel y pruebas), `pedidos/views.py`, `templates/clientes/`, `templates/pedidos/pagar.html` |
+| 28 | Cada solicitud de cotización y cada pregunta del formulario "¿Tienes una pregunta?" (ficha del producto y del curso) queda como consulta con nombre, WhatsApp, producto o curso y fecha; estados Nueva, Contactada, Compró y Descartada; resaltado de las que llevan más de 24 horas hábiles sin respuesta; botón de WhatsApp con el producto; consultas del mes que terminaron en compra | `consultas/` (modelos, señales, panel y pruebas), `core/festivos.py`, `templates/consultas/` |
 
 Para la HU 07:
 
@@ -167,11 +168,21 @@ Para la HU 27:
 - El código se escribe en el paso de pago. Solo funciona con la cuenta a la que se asignó, hasta su fecha de vencimiento (incluida) y una sola vez: queda usado al confirmar el pedido. Se descuenta sobre los productos (también si están en oferta), no sobre el empaque de regalo, y nunca deja el total en negativo.
 - `cargar_datos_demo` crea 4 clientes de ejemplo con la contraseña `Cliente123*` (por ejemplo `mariana@correo.com`, que cumple años en 3 días y tiene el código `CUMPLE-MARIANA-DEMO`). Con `--reiniciar` solo se borran esas cuentas de ejemplo, nunca las de clientes reales.
 
-Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `clientes`, `cursos`, `cotizaciones`, `pedidos` y `core`).
+Para la HU 28:
+
+- La dueña ve las consultas en **Seguimiento de clientes › Consultas**. Arriba están las consultas del mes que terminaron en compra ("X de Y" y el porcentaje) y cuántas llevan más de 24 horas hábiles sin respuesta. Esas filas se ven resaltadas.
+- Las 24 horas hábiles no cuentan sábados, domingos ni festivos de Colombia: una consulta del viernes a las 3 p.m. con lunes festivo se resalta el martes a las 3 p.m.
+- El botón **WhatsApp** abre la conversación con un mensaje que menciona el producto, el curso o la pieza que cotizó, y si la consulta estaba "Nueva" la pasa a "Contactada".
+- La consulta pasa sola a "Compró" cuando esa misma persona (misma cuenta, correo o WhatsApp) hace un pedido o paga una inscripción a un curso. También se puede cambiar a mano en la lista.
+- Las solicitudes de cotización ya no tienen su propio estado (Nueva/Respondida): ahora usan el de su consulta. La migración pasa las cotizaciones que ya existían a consultas ("Respondida" queda como "Contactada", y si esa persona ya había hecho un pedido, como "Compró").
+- Solo la dueña ve las consultas. La diseñadora sigue viendo las cotizaciones con su estado de seguimiento.
+- Los clics sueltos en "Comprar por WhatsApp" no cuentan como consulta, porque la página no conoce el nombre ni el número de quien escribe.
+
+Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `clientes`, `consultas`, `cursos`, `cotizaciones`, `pedidos` y `core`).
 
 ## Roles del panel
 
-- Dueña: puede todo. Crea, edita y elimina productos, categorías, colecciones y cursos; maneja pedidos, empaques, inscripciones, la configuración de la tienda, la historia y las visitas por canal; ve a los clientes y crea y envía los códigos de descuento (HU 27).
+- Dueña: puede todo. Crea, edita y elimina productos, categorías, colecciones y cursos; maneja pedidos, empaques, inscripciones, la configuración de la tienda, la historia y las visitas por canal; ve a los clientes y crea y envía los códigos de descuento (HU 27), y hace el seguimiento de las consultas (HU 28).
 - Diseñadora de accesorios: crea y edita productos, categorías y colecciones, pero no puede eliminarlos. Los cursos solo los ve. Ve las cotizaciones y, en el panel de producción, cambia el estado de los pedidos y le escribe al cliente.
 
 Los grupos se crean solos al correr `migrate`.

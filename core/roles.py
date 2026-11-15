@@ -25,6 +25,8 @@ PERMISOS = {
         "pedidos": {"pedido": CRUD, "detallepedido": CRUD, "tipoempaque": CRUD, "tiempoenvio": CRUD},
         # HU 27: la dueña ve a los clientes y crea y envía los códigos de descuento
         "clientes": {"cliente": ("change", "view"), "codigodescuento": CRUD},
+        # HU 28: solo la dueña hace seguimiento de las consultas
+        "consultas": {"consulta": ("change", "view", "delete")},
         "core": {
             "configuraciontienda": ("change", "view"),
             "contenidohistoria": ("change", "view"),

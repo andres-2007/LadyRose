@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load ladyrose %}
+{% load ladyrose consultas %}
 {% block titulo %}{{ producto.nombre }}{% endblock %}
 {% block og_titulo %}{{ producto.nombre }} · {{ producto.precio_actual|pesos }}{% endblock %}
 {% block og_descripcion %}{{ producto.descripcion|truncatechars:150 }}{% endblock %}
@@ -142,6 +142,7 @@
         </details>
       </div>
 
+      {% if not producto.en_galeria %}{% formulario_pregunta producto %}{% endif %}
       {% with objeto=producto %}{% include "partials/compartir.html" %}{% endwith %}
     </div>
   </article>

@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from catalogo.models import Producto
+from consultas.models import registrar_cotizacion
 
 from .forms import CotizacionForm, InspiradaForm, PersonalizarProductoForm
 from .models import ImagenReferencia, SolicitudCotizacion
@@ -19,6 +20,8 @@ def _guardar(form, **extra):
         solicitud.save()
         for imagen in form.cleaned_data.get("imagenes", []):
             ImagenReferencia.objects.create(solicitud=solicitud, imagen=imagen)
+        # HU 28 CA 1: la solicitud queda registrada como consulta para hacerle seguimiento
+        registrar_cotizacion(solicitud)
     return solicitud
 
 

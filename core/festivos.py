@@ -63,3 +63,29 @@ def sumar_dias_habiles(fecha, dias):
         if es_dia_habil(fecha):
             dias -= 1
     return fecha
+
+
+def fin_horas_habiles(inicio, horas):
+    """HU 28: momento en que se cumplen `horas` contando solo los días hábiles completos.
+
+    Las horas de sábados, domingos y festivos no cuentan. Por ejemplo, 24 horas
+    hábiles desde un viernes a las 3 p.m. (con lunes festivo) se cumplen el
+    martes a las 3 p.m. Una consulta de un sábado empieza a contar el lunes a
+    las 12 a.m. y se cumple el martes a las 12 a.m.
+    """
+    from datetime import datetime, time
+
+    from django.utils import timezone
+
+    actual = timezone.localtime(inicio)
+    restante = timedelta(hours=horas)
+    while True:
+        dia = actual.date()
+        fin_dia = timezone.make_aware(datetime.combine(dia + timedelta(days=1), time.min),
+                                      timezone.get_current_timezone())
+        if es_dia_habil(dia):
+            disponible = fin_dia - actual
+            if restante <= disponible:
+                return actual + restante
+            restante -= disponible
+        actual = fin_dia

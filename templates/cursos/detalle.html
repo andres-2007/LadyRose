@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load ladyrose %}
+{% load ladyrose consultas %}
 {% block titulo %}{{ curso.nombre }}{% endblock %}
 {% block og_titulo %}{{ curso.nombre }} · Curso Ladyrose{% endblock %}
 {% block og_descripcion %}{{ curso.tecnica }} · {{ curso.get_modalidad_display }} · {{ curso.fecha|date:"j \d\e F"|lower }}{% endblock %}
@@ -79,6 +79,7 @@
         {% endif %}
       </section>
 
+      {% formulario_pregunta curso %}
       {% with objeto=curso %}{% include "partials/compartir.html" %}{% endwith %}
     </div>
   </article>

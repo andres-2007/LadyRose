@@ -26,6 +26,7 @@ from django.contrib.auth import get_user_model
 from catalogo.models import Categoria, Coleccion, FotoProducto, Producto, TallaProducto
 from clientes.models import Cliente, CodigoDescuento
 from core.models import ContenidoHistoria, FotoTaller, VisitaOrigen
+from consultas.models import Consulta, registrar_cotizacion
 from cotizaciones.models import SolicitudCotizacion
 from cursos.models import Curso, FotoCurso, Inscripcion
 from pedidos.models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
@@ -297,6 +298,7 @@ class Command(BaseCommand):
                                            modalidad="presencial", estado_pago=pago)
 
         self._historia()
+        self._consultas(productos, cursos)
         self._pedidos(productos)
         self._clientes()
 
@@ -309,6 +311,7 @@ class Command(BaseCommand):
 
     # ------------------------------------------------------------------
     def _borrar(self):
+        Consulta.objects.all().delete()
         # Solo se borran las cuentas de ejemplo, nunca las de clientes reales
         get_user_model().objects.filter(email__in=[c[1] for c in CLIENTES_DEMO], is_staff=False).delete()
         Pedido.objects.all().delete()
@@ -360,6 +363,34 @@ class Command(BaseCommand):
                               ("pulseras-persona-favorita", "Detalles para las personas favoritas")]:
             FotoTaller.objects.create(historia=historia, imagen=archivo(imagen), descripcion=texto)
 
+    def _consultas(self, productos, cursos):
+        """HU 28: preguntas de ejemplo (personas inventadas) en distintos estados."""
+        if Consulta.objects.exists():
+            return
+        ahora = timezone.now()
+        # nombre, WhatsApp, producto o curso, pregunta, hace cuántas horas llegó, estado
+        ejemplos = [
+            ("Carolina Duque", "3204445566", productos["Maxicollar Sagrado Corazón"],
+             "¿Lo tienen en rosado? Es para un regalo.", 80, Consulta.Estado.NUEVA),
+            ("Natalia Herrera", "3115556677", productos["Bendición del Hogar"],
+             "¿Me la pueden hacer con la medalla de San Benito?", 30, Consulta.Estado.NUEVA),
+            ("Luisa Fernanda Ortiz", "3016667788", cursos[0],
+             "¿Cuándo vuelven a abrir el taller de bendición del hogar?", 2, Consulta.Estado.NUEVA),
+            ("Paola Martínez", "3127778899", productos["Pulsera Escapulario Azul"],
+             "¿Hacen envíos a Pasto?", 50, Consulta.Estado.CONTACTADA),
+            ("Jimena Rojas", "3138889900", productos["Portagafas Pastel"],
+             "Quería saber el precio por mayor.", 120, Consulta.Estado.DESCARTADA),
+        ]
+        for nombre, whatsapp, objeto, pregunta, horas, estado in ejemplos:
+            es_curso = isinstance(objeto, Curso)
+            Consulta.objects.create(
+                origen=Consulta.Origen.CURSO if es_curso else Consulta.Origen.PRODUCTO,
+                nombre=nombre, whatsapp=whatsapp, mensaje=pregunta, estado=estado,
+                curso=objeto if es_curso else None, producto=None if es_curso else objeto,
+                fecha=ahora - timedelta(hours=horas),
+                contactada_en=ahora - timedelta(hours=horas - 3) if estado != Consulta.Estado.NUEVA else None,
+            )
+
     def _clientes(self):
         """HU 27: cuentas de ejemplo, ligadas a los pedidos de ejemplo con el mismo correo."""
         User = get_user_model()
@@ -389,6 +420,9 @@ class Command(BaseCommand):
             motivo="Es para mi mamá, que siempre deja el celular en cualquier parte. Cumple 60 años.",
             acepta_pieza_unica=True, fecha_aceptacion=timezone.now(),
         )
+        # HU 28: la cotización queda como consulta; pasa a "Compró" con el pedido de Laura de más abajo
+        consulta = registrar_cotizacion(cotizacion)
+        Consulta.objects.filter(pk=consulta.pk).update(fecha=timezone.now() - timedelta(days=5))
         ejemplos = [
             # comprador, producto, talla, color, regalo, nota, estado, motivo, canal
             ("Mariana López", "Maxicollar Sagrado Corazón", "42 cm", "", caja,
