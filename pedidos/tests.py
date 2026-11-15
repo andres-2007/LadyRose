@@ -1,4 +1,4 @@
-"""Pruebas de los criterios de aceptación de las HU 01, 03, 04, 10, 11 y 24 (Sprint 2) y HU 07 y 30 (Sprint 3)."""
+"""Pruebas de los criterios de aceptación de las HU 01, 03, 04, 10, 11 y 24 (Sprint 2) y HU 07, 14 y 30 (Sprint 3)."""
 from datetime import date, datetime, timedelta
 from decimal import Decimal
 from urllib.parse import unquote
@@ -742,3 +742,134 @@ class HU30ConfirmarEnvioTests(HU30EnvioBase):
         self.client.force_login(self.disenadora)
         r = self.client.get(reverse("pedidos:panel_detalle", args=[self.pedido.pk]))
         self.assertContains(r, "Por confirmar")
+
+
+# ----------------------------------------------------------------------
+# HU 14: compra al por mayor (Sprint 3)
+# ----------------------------------------------------------------------
+
+class HU14CompraMayorTests(BaseTienda):
+    def setUp(self):
+        super().setUp()
+        self.producto.precio_mayorista = Decimal("40000")
+        self.producto.save()
+        conf = ConfiguracionTienda.obtener()
+        conf.monto_minimo_mayorista = Decimal("200000")
+        conf.save()
+
+    def agregar_mayor(self, cantidad, producto=None, **datos):
+        producto = producto or self.producto
+        datos.setdefault("talla", self.talla.pk if producto == self.producto else "")
+        return self.client.post(reverse("pedidos:agregar_mayorista", args=[producto.pk]),
+                                {"cantidad": cantidad, **datos})
+
+    def confirmar(self, **extra):
+        return self.client.post(reverse("pedidos:pagar_mayorista"), datos_envio(**extra))
+
+    # ----- CA 1 -----
+    def test_ca1_el_modulo_muestra_el_precio_mayorista_de_cada_referencia(self):
+        sin_precio = Producto.objects.create(nombre="Aretes Luna", categoria=self.categoria, precio=30000)
+        r = self.client.get(reverse("core:mayorista"))
+        self.assertContains(r, "Collar Flores")
+        self.assertContains(r, "$40.000")
+        self.assertContains(r, "$68.000")  # el precio al detal tachado
+        self.assertNotContains(r, f'id="ref-{sin_precio.pk}"')
+
+    def test_ca1_no_se_muestran_productos_ocultos_o_vendidos(self):
+        self.producto.visible = False
+        self.producto.save()
+        self.assertNotContains(self.client.get(reverse("core:mayorista")), f'id="ref-{self.producto.pk}"')
+
+    def test_el_precio_mayorista_debe_ser_menor_al_precio_normal(self):
+        self.producto.precio_mayorista = Decimal("68000")
+        with self.assertRaises(ValidationError):
+            self.producto.full_clean()
+
+    # ----- Carrito separado -----
+    def test_el_carrito_mayorista_va_aparte_del_carrito_al_detal(self):
+        self.agregar_al_carrito()
+        self.agregar_mayor(6)
+        self.assertEqual(len(self.client.session["carrito"]), 1)
+        self.assertEqual(sum(self.client.session["carrito_mayorista"].values()), 6)
+        r = self.client.get(reverse("pedidos:carrito_mayorista"))
+        self.assertContains(r, "$240.000")  # 6 x $40.000 (precio mayorista)
+        self.assertContains(self.client.get(reverse("pedidos:carrito")), "$68.000")
+
+    def test_no_se_puede_agregar_al_por_mayor_un_producto_sin_precio_mayorista(self):
+        sin_precio = Producto.objects.create(nombre="Aretes Luna", categoria=self.categoria, precio=30000)
+        self.agregar_mayor(5, producto=sin_precio)
+        self.assertEqual(self.client.session.get("carrito_mayorista", {}), {})
+
+    def test_el_pedido_queda_marcado_como_mayorista_y_no_vacia_el_carrito_al_detal(self):
+        self.agregar_al_carrito()
+        self.agregar_mayor(5)
+        self.confirmar()
+        pedido = Pedido.objects.get()
+        self.assertEqual(pedido.tipo, Pedido.Tipo.MAYORISTA)
+        self.assertEqual(pedido.subtotal, Decimal("200000"))
+        self.assertEqual(pedido.detalles.get().precio_unitario, Decimal("40000"))
+        self.assertEqual(self.client.session["carrito_mayorista"], {})
+        self.assertEqual(len(self.client.session["carrito"]), 1)
+
+    # ----- CA 2 -----
+    def test_ca2_por_debajo_del_minimo_no_se_puede_confirmar(self):
+        self.agregar_mayor(4)  # $160.000
+        r = self.confirmar()
+        self.assertRedirects(r, reverse("pedidos:carrito_mayorista"))
+        self.assertFalse(Pedido.objects.exists())
+        self.assertRedirects(self.client.get(reverse("pedidos:pagar_mayorista")),
+                             reverse("pedidos:carrito_mayorista"))
+
+    def test_ca2_igual_al_minimo_si_se_puede_confirmar(self):
+        self.agregar_mayor(5)  # $200.000
+        self.assertEqual(self.client.get(reverse("pedidos:pagar_mayorista")).status_code, 200)
+        self.confirmar()
+        self.assertEqual(Pedido.objects.count(), 1)
+
+    def test_ca2_por_encima_del_minimo_si_se_puede_confirmar(self):
+        self.agregar_mayor(8)  # $320.000
+        self.confirmar()
+        self.assertEqual(Pedido.objects.get().subtotal, Decimal("320000"))
+
+    def test_ca2_no_se_exige_cantidad_minima_por_referencia(self):
+        costoso = Producto.objects.create(nombre="Gargantilla Rosa", categoria=self.categoria, precio=300000,
+                                          precio_mayorista=210000)
+        self.agregar_mayor(1, producto=costoso)
+        self.confirmar()
+        self.assertEqual(Pedido.objects.get().detalles.get().cantidad, 1)
+
+    def test_ca2_se_usa_el_minimo_vigente_al_confirmar(self):
+        self.agregar_mayor(5)  # $200.000
+        conf = ConfiguracionTienda.obtener()
+        conf.monto_minimo_mayorista = Decimal("250000")
+        conf.save()
+        self.confirmar()
+        self.assertFalse(Pedido.objects.exists())
+
+    # ----- CA 3 -----
+    def test_ca3_muestra_cuanto_dinero_falta(self):
+        self.agregar_mayor(3)  # $120.000, faltan $80.000
+        r = self.client.get(reverse("pedidos:carrito_mayorista"))
+        self.assertContains(r, "Te faltan <strong>$80.000</strong>")
+        self.assertContains(r, 'aria-disabled="true"')
+        self.assertContains(self.client.get(reverse("core:mayorista")), "$80.000")
+
+    def test_ca3_cuando_alcanza_ya_no_dice_que_falta(self):
+        self.agregar_mayor(5)
+        r = self.client.get(reverse("pedidos:carrito_mayorista"))
+        self.assertContains(r, "ya alcanza el monto mínimo")
+        self.assertContains(r, reverse("pedidos:pagar_mayorista"))
+
+    # ----- CA 4 -----
+    def test_ca4_descarga_la_pre_cotizacion_en_pdf(self):
+        self.agregar_mayor(3)
+        r = self.client.get(reverse("pedidos:precotizacion_mayorista"))
+        self.assertEqual(r["Content-Type"], "application/pdf")
+        self.assertIn("attachment", r["Content-Disposition"])
+        self.assertTrue(r.content.startswith(b"%PDF"))
+        self.assertContains(self.client.get(reverse("pedidos:carrito_mayorista")),
+                            reverse("pedidos:precotizacion_mayorista"))
+
+    def test_ca4_sin_referencias_no_hay_pre_cotizacion(self):
+        r = self.client.get(reverse("pedidos:precotizacion_mayorista"))
+        self.assertRedirects(r, reverse("pedidos:carrito_mayorista"))
