@@ -7,6 +7,7 @@ from django.core.mail import send_mail
 from django.db import transaction
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_GET, require_POST
 
@@ -15,7 +16,7 @@ from clientes.models import CodigoDescuento, CodigoInvalido
 from clientes.views import URL_INGRESAR
 from core.templatetags.ladyrose import pesos
 
-from .carrito import Carrito, ErrorCarrito
+from .carrito import Carrito, CarritoMayorista, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
 from .envios import MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio
 from .forms import AvisoClienteForm, ComprobanteForm, PedidoForm
@@ -41,9 +42,8 @@ def carrito(request):
     })
 
 
-@require_POST
-def agregar(request, producto_id):
-    producto = get_object_or_404(Producto, pk=producto_id)
+def _agregar(request, carrito, producto):
+    """Agrega el producto con la talla, el color y la cantidad que vienen del formulario."""
     talla = None
     talla_id = request.POST.get("talla")
     if talla_id:
@@ -52,8 +52,14 @@ def agregar(request, producto_id):
         cantidad = int(request.POST.get("cantidad", 1))
     except ValueError:
         cantidad = 1
+    carrito.agregar(producto, talla, request.POST.get("color", ""), cantidad)
+
+
+@require_POST
+def agregar(request, producto_id):
+    producto = get_object_or_404(Producto, pk=producto_id)
     try:
-        Carrito(request).agregar(producto, talla, request.POST.get("color", ""), cantidad)
+        _agregar(request, Carrito(request), producto)
     except ErrorCarrito as error:
         messages.error(request, str(error))
         return redirect(producto.get_absolute_url())
@@ -63,13 +69,16 @@ def agregar(request, producto_id):
     return redirect("pedidos:carrito")
 
 
-@require_POST
-def actualizar(request):
-    c = Carrito(request)
+def _actualizar(request, carrito):
     try:
-        c.actualizar(request.POST.get("clave", ""), int(request.POST.get("cantidad", 1)))
+        carrito.actualizar(request.POST.get("clave", ""), int(request.POST.get("cantidad", 1)))
     except ValueError:
         pass
+
+
+@require_POST
+def actualizar(request):
+    _actualizar(request, Carrito(request))
     return redirect("pedidos:carrito")
 
 
@@ -77,6 +86,45 @@ def actualizar(request):
 def quitar(request):
     Carrito(request).quitar(request.POST.get("clave", ""))
     return redirect("pedidos:carrito")
+
+
+# ------------------------------------------------------------------
+# Pedido al por mayor (HU 14): carrito separado del carrito al detal
+# ------------------------------------------------------------------
+
+def carrito_mayorista(request):
+    c = CarritoMayorista(request)
+    items = c.items()
+    return render(request, "pedidos/carrito_mayorista.html", {
+        "items": items,
+        "subtotal": sum((i["subtotal"] for i in items), 0),
+    })
+
+
+@require_POST
+def agregar_mayorista(request, producto_id):
+    producto = get_object_or_404(Producto, pk=producto_id)
+    try:
+        _agregar(request, CarritoMayorista(request), producto)
+    except ErrorCarrito as error:
+        messages.error(request, str(error))
+    else:
+        messages.success(request, f"Agregaste {producto.nombre} a tu pedido al por mayor.")
+    if request.POST.get("siguiente") == "pedido":
+        return redirect("pedidos:carrito_mayorista")
+    return redirect(reverse("core:mayorista") + f"#ref-{producto.pk}")
+
+
+@require_POST
+def actualizar_mayorista(request):
+    _actualizar(request, CarritoMayorista(request))
+    return redirect("pedidos:carrito_mayorista")
+
+
+@require_POST
+def quitar_mayorista(request):
+    CarritoMayorista(request).quitar(request.POST.get("clave", ""))
+    return redirect("pedidos:carrito_mayorista")
 
 
 # ------------------------------------------------------------------
@@ -93,9 +141,21 @@ def _datos_cuenta(usuario):
 
 @login_required(login_url=URL_INGRESAR)  # HU 27: para comprar hay que tener cuenta
 def pagar(request):
-    c = Carrito(request)
+    return _pagar(request, Carrito(request))
+
+
+@login_required(login_url=URL_INGRESAR)
+def pagar_mayorista(request):
+    """HU 14: el pedido mayorista se confirma con el mismo formulario de datos y pago."""
+    return _pagar(request, CarritoMayorista(request))
+
+
+def _pagar(request, c):
     items = c.items()
     if not items:
+        if c.mayorista:
+            messages.info(request, "Tu pedido al por mayor está vacío.")
+            return redirect("core:mayorista")
         messages.info(request, "Tu carrito está vacío.")
         return redirect("catalogo:lista")
     subtotal = sum((i["subtotal"] for i in items), 0)
@@ -104,10 +164,10 @@ def pagar(request):
                       initial=None if request.method == "POST" else _datos_cuenta(request.user))
     if request.method == "POST" and form.is_valid():
         try:
-            pedido = _crear_pedido(request, form, items, subtotal)
+            pedido = _crear_pedido(request, form, items, subtotal, mayorista=c.mayorista)
         except ErrorCarrito as error:
             messages.error(request, str(error))
-            return redirect("pedidos:carrito")
+            return redirect("pedidos:carrito_mayorista" if c.mayorista else "pedidos:carrito")
         except CodigoInvalido as error:
             form.add_error("codigo", str(error))
         else:
@@ -118,7 +178,7 @@ def pagar(request):
     productos = [i["producto"] for i in items]
     codigo = form.codigo_descuento if form.is_bound and not form.errors.get("codigo") else None
     return render(request, "pedidos/pagar.html", {
-        "form": form, "items": items, "subtotal": subtotal,
+        "form": form, "items": items, "subtotal": subtotal, "mayorista": c.mayorista,
         # HU 27: descuento del código que ya se validó (si la página vuelve con otros errores)
         "descuento": codigo.calcular(subtotal) if codigo else 0,
         # HU 30: costo del envío si la página vuelve con la ciudad y el barrio ya escritos
@@ -133,10 +193,15 @@ def pagar(request):
     })
 
 
+def _carrito_de(request, mayorista):
+    """HU 14: las consultas del pago usan el carrito al detal o el mayorista."""
+    return CarritoMayorista(request) if mayorista else Carrito(request)
+
+
 @require_GET
-def calcular_envio_vista(request):
+def calcular_envio_vista(request, mayorista=False):
     """HU 30: costo del envío para la ciudad y el barrio que escribe el cliente."""
-    lineas = [(i["producto"], i["cantidad"]) for i in Carrito(request).items()]
+    lineas = [(i["producto"], i["cantidad"]) for i in _carrito_de(request, mayorista).items()]
     ciudad = request.GET.get("ciudad", "").strip()
     if not lineas or not ciudad:
         return JsonResponse({"ok": False})
@@ -147,9 +212,9 @@ def calcular_envio_vista(request):
 
 @require_GET
 @login_required(login_url=URL_INGRESAR)
-def aplicar_codigo(request):
+def aplicar_codigo(request, mayorista=False):
     """HU 27: revisa el código que escribe el cliente y devuelve cuánto se descuenta."""
-    items = Carrito(request).items()
+    items = _carrito_de(request, mayorista).items()
     subtotal = sum((i["subtotal"] for i in items), 0)
     try:
         codigo = CodigoDescuento.buscar(request.GET.get("codigo", ""), request.user)
@@ -163,16 +228,16 @@ def aplicar_codigo(request):
 
 
 @require_GET
-def estimar(request):
+def estimar(request, mayorista=False):
     """HU 07 CA 2 y CA 3: tiempo de envío y fechas estimadas para la ciudad que escribe el cliente."""
-    productos = [i["producto"] for i in Carrito(request).items()]
+    productos = [i["producto"] for i in _carrito_de(request, mayorista).items()]
     estimado = estimar_entrega(productos, request.GET.get("ciudad", ""))
     if not productos or estimado is None:
         return JsonResponse({"ok": False})
     return JsonResponse({"ok": True, **estimado.como_dict()})
 
 
-def _crear_pedido(request, form, items, subtotal):
+def _crear_pedido(request, form, items, subtotal, mayorista=False):
     with transaction.atomic():
         # Las piezas únicas se bloquean para que dos personas no compren la misma (HU 08)
         ids_unicas = [i["producto"].pk for i in items if i["producto"].pieza_unica]
@@ -181,6 +246,7 @@ def _crear_pedido(request, form, items, subtotal):
             raise ErrorCarrito("Una de las piezas únicas de tu carrito se acaba de vender.")
 
         pedido = form.save(commit=False)
+        pedido.tipo = Pedido.Tipo.MAYORISTA if mayorista else Pedido.Tipo.DETAL
         pedido.cliente = request.user
         pedido.subtotal = subtotal
         pedido.costo_empaque = pedido.empaque.costo if pedido.empaque else 0

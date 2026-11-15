@@ -92,20 +92,20 @@ class DetallePedidoInline(admin.TabularInline):
 class PedidoAdmin(admin.ModelAdmin):
     """HU 24 CA 5: envío, productos y pago en una sola vista."""
 
-    list_display = ("numero_pedido", "creado", "nombre", "ciudad", "total_pesos", "envio_lista", "metodo_pago",
+    list_display = ("numero_pedido", "creado", "tipo", "nombre", "ciudad", "total_pesos", "envio_lista", "metodo_pago",
                     "estado_pago", "estado_produccion", "estado_envio", "regalo")
-    list_filter = ("envio_costo_estado", "estado_produccion", "estado_envio", "estado_pago", "metodo_pago",
+    list_filter = ("tipo", "envio_costo_estado", "estado_produccion", "estado_envio", "estado_pago", "metodo_pago",
                    "canal_origen")
     search_fields = ("id", "nombre", "telefono", "correo", "nombre_recibe", "direccion")
     list_editable = ("estado_envio",)
     date_hierarchy = "creado"
     inlines = [DetallePedidoInline]
-    readonly_fields = ("numero_pedido", "creado", "ver_comprobante", "abrir_en_panel", "nota_destacada",
+    readonly_fields = ("numero_pedido", "creado", "tipo", "ver_comprobante", "abrir_en_panel", "nota_destacada",
                        "subtotal", "costo_empaque", "total", "canal_origen", "estado_actualizado",
                        "cliente", "codigo_descuento", "descuento",
                        "envio_costo_estado", "envio_detalle", "peso_total", "envio_avisado_en", "avisar_envio")
     fieldsets = (
-        (None, {"fields": ("numero_pedido", "creado", "abrir_en_panel")}),
+        (None, {"fields": ("numero_pedido", "creado", "tipo", "abrir_en_panel")}),
         ("Quien compra", {"fields": ("cliente", "nombre", "correo", "telefono", "whatsapp_igual", "whatsapp")}),
         ("Datos de envío", {"fields": ("enviar_a_otra_persona", "nombre_recibe", "telefono_recibe",
                                        "direccion", "barrio", "ciudad", "indicaciones", "estado_envio")}),

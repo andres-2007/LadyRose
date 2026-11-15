@@ -36,9 +36,15 @@ def mayorista(request):
     categorias = sorted({p.categoria for p in productos}, key=lambda c: c.nombre)
     if categoria:
         productos = productos.filter(categoria__slug=categoria)
+    from pedidos.carrito import CarritoMayorista
+
+    pedido = CarritoMayorista(request).items()
     return render(request, "core/mayorista.html", {
         "monto_minimo": ConfiguracionTienda.obtener().monto_minimo_mayorista,
         "productos": productos,
+        # HU 14: resumen del pedido al por mayor que la persona va armando
+        "unidades_pedido": sum(i["cantidad"] for i in pedido),
+        "subtotal_pedido": sum((i["subtotal"] for i in pedido), 0),
         "categorias": categorias,
         "categoria_actual": categoria,
     })

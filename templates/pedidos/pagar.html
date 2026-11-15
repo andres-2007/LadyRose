@@ -1,11 +1,17 @@
 {% extends "base.html" %}
 {% load ladyrose %}
-{% block titulo %}Finalizar compra{% endblock %}
+{% block titulo %}{% if mayorista %}Confirmar pedido al por mayor{% else %}Finalizar compra{% endif %}{% endblock %}
 {% block contenido %}
 <div class="contenedor">
   <header class="cabecera-pagina">
+    {% if mayorista %}
+    {# HU 14: el pedido mayorista usa el mismo formulario, con su propio carrito #}
+    <p class="migas"><a href="{% url 'core:mayorista' %}">Al por mayor</a> &nbsp;/&nbsp; <a href="{% url 'pedidos:carrito_mayorista' %}">Tu pedido</a> &nbsp;/&nbsp; Datos y pago</p>
+    <h1>Confirmar pedido al por mayor</h1>
+    {% else %}
     <p class="migas"><a href="{% url 'pedidos:carrito' %}">Carrito</a> &nbsp;/&nbsp; Datos y pago</p>
     <h1>Finalizar compra</h1>
+    {% endif %}
   </header>
 
   <div class="pago">
@@ -51,7 +57,7 @@
             {% if form.barrio.errors %}<ul class="errores">{% for e in form.barrio.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
           </div>
           {# HU 30: costo del envío según la zona o el peso #}
-          <div class="envio-costo ancho" data-envio data-url="{% url 'pedidos:calcular_envio' %}" aria-live="polite" {% if not envio %}hidden{% endif %}>
+          <div class="envio-costo ancho" data-envio data-url="{% if mayorista %}{% url 'pedidos:calcular_envio_mayorista' %}{% else %}{% url 'pedidos:calcular_envio' %}{% endif %}" aria-live="polite" {% if not envio %}hidden{% endif %}>
             <strong>Costo del envío: <span data-envio-texto>{% if envio %}{% if envio.valor is None %}Por confirmar{% elif envio.valor == 0 %}Gratis{% else %}{{ envio.valor|pesos }}{% endif %}{% endif %}</span></strong>
             <span data-envio-mensaje>{{ envio.mensaje }}</span>
           </div>
@@ -95,7 +101,7 @@
       <section class="bloque-form">
         <h2><span class="bloque-form__numero">4</span>Código de descuento</h2>
         <p>Si Ladyrose te envió un código, escríbelo aquí. Lo ves también en <a href="{% url 'clientes:mi_cuenta' %}" target="_blank">Mi cuenta</a>.</p>
-        <div class="campo {% if form.codigo.errors %}campo--error{% endif %}" data-descuento data-url="{% url 'pedidos:aplicar_codigo' %}">
+        <div class="campo {% if form.codigo.errors %}campo--error{% endif %}" data-descuento data-url="{% if mayorista %}{% url 'pedidos:aplicar_codigo_mayorista' %}{% else %}{% url 'pedidos:aplicar_codigo' %}{% endif %}">
           <label for="{{ form.codigo.id_for_label }}">{{ form.codigo.label }}</label>
           <div class="descuento-pago">
             {{ form.codigo }}
@@ -143,7 +149,7 @@
     </form>
 
     <aside class="resumen pago__resumen">
-      <h2>Tu pedido</h2>
+      <h2>Tu pedido{% if mayorista %} al por mayor{% endif %}</h2>
       {% for i in items %}
         <div class="resumen__item">
           {% with foto=i.producto.foto_principal %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="">{% else %}<span></span>{% endif %}{% endwith %}

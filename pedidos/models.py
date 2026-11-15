@@ -155,6 +155,10 @@ class TipoEmpaque(models.Model):
 
 
 class Pedido(models.Model):
+    class Tipo(models.TextChoices):
+        DETAL = "detal", "Al detal"
+        MAYORISTA = "mayorista", "Al por mayor"  # HU 14
+
     class EstadoProduccion(models.TextChoices):
         PENDIENTE = "pendiente", "Pendiente"
         EN_CURSO = "en_curso", "En curso"
@@ -176,6 +180,8 @@ class Pedido(models.Model):
         VERIFICADO = "verificado", "Verificado"
 
     creado = models.DateTimeField("Fecha del pedido", default=timezone.now)
+    # HU 14: los pedidos del módulo mayorista se separan de los pedidos al detal
+    tipo = models.CharField("Tipo de pedido", max_length=20, choices=Tipo.choices, default=Tipo.DETAL)
 
     # ----- Quien compra -----
     nombre = models.CharField("Nombre completo", max_length=150)
@@ -263,6 +269,10 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f"Pedido {self.numero}"
+
+    @property
+    def es_mayorista(self):
+        return self.tipo == self.Tipo.MAYORISTA
 
     @property
     def numero(self):

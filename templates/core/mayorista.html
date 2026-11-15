@@ -26,6 +26,14 @@
     </div>
   </div>
 
+  {# HU 14: resumen del pedido al por mayor (va aparte del carrito al detal) #}
+  {% if unidades_pedido %}
+  <div class="barra-pedido-mayor" role="status">
+    <div><strong>Tu pedido al por mayor:</strong> {{ unidades_pedido }} unidad{{ unidades_pedido|pluralize:"es" }} · {{ subtotal_pedido|pesos }}</div>
+    <a class="boton boton--rosa" href="{% url 'pedidos:carrito_mayorista' %}">Ver pedido</a>
+  </div>
+  {% endif %}
+
   {# HU 14 CA 1: precio mayorista de cada referencia #}
   <section class="referencias-mayor" aria-labelledby="titulo-referencias">
     <div class="referencias-mayor__cabecera">
@@ -43,7 +51,7 @@
     {% if productos %}
     <ul class="referencias-mayor__lista">
       {% for p in productos %}
-      <li class="referencia-mayor">
+      <li class="referencia-mayor" id="ref-{{ p.pk }}">
         <a class="referencia-mayor__foto" href="{{ p.get_absolute_url }}">
           {% with foto=p.foto_principal %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ p.nombre }}" loading="lazy">{% endif %}{% endwith %}
         </a>
@@ -57,6 +65,29 @@
           <strong class="referencia-mayor__precio">{{ p.precio_mayorista|pesos }}</strong>
           <span class="texto-suave">por unidad</span>
         </div>
+        <form class="referencia-mayor__agregar" method="post" action="{% url 'pedidos:agregar_mayorista' p.pk %}">
+          {% csrf_token %}
+          {% with tallas=p.tallas_disponibles colores=p.lista_colores %}
+          {% if tallas %}
+          <select name="talla" aria-label="Talla de {{ p.nombre }}" required>
+            <option value="">Talla</option>
+            {% for t in tallas %}<option value="{{ t.pk }}">{{ t.nombre }} ({{ t.medida }})</option>{% endfor %}
+          </select>
+          {% endif %}
+          {% if colores|length > 1 %}
+          <select name="color" aria-label="Color de {{ p.nombre }}" required>
+            <option value="">Color</option>
+            {% for c in colores %}<option>{{ c }}</option>{% endfor %}
+          </select>
+          {% endif %}
+          {% endwith %}
+          {% if p.pieza_unica %}
+            <input type="hidden" name="cantidad" value="1"><span class="etiqueta">Pieza única</span>
+          {% else %}
+          <input class="referencia-mayor__cantidad" type="number" name="cantidad" value="1" min="1" max="500" aria-label="Cantidad de {{ p.nombre }}">
+          {% endif %}
+          <button class="boton boton--borde" type="submit">Agregar</button>
+        </form>
       </li>
       {% endfor %}
     </ul>
