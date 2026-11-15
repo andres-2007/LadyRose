@@ -1,9 +1,11 @@
-"""Pruebas de los criterios de aceptación de las HU 01, 03, 04, 10, 11 y 24 (Sprint 2) y HU 07 (Sprint 3)."""
+"""Pruebas de los criterios de aceptación de las HU 01, 03, 04, 10, 11 y 24 (Sprint 2) y HU 07 y 30 (Sprint 3)."""
 from datetime import date, datetime, timedelta
+from decimal import Decimal
+from urllib.parse import unquote
 
 from django.contrib.auth.models import Group, User
-from django.core.exceptions import ValidationError
 from django.core import mail
+from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from django.utils import timezone
@@ -16,7 +18,7 @@ from core.tests_utils import PruebaConArchivos, imagen, iniciar_sesion_cliente
 from cotizaciones.models import ImagenReferencia, SolicitudCotizacion
 
 from .entregas import estimar_entrega
-from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
+from .models import BarrioZona, DetallePedido, Pedido, TarifaPeso, TiempoEnvio, TipoEmpaque, ZonaEnvio
 
 
 def datos_envio(**extra):
@@ -86,6 +88,9 @@ class HU24DatosDespachoTests(BaseTienda):
         self.assertEqual(Pedido.objects.get().whatsapp, "3209998877")
 
     def test_ca3_transferencia_exige_comprobante(self):
+        # HU 30: con el envío ya calculado (barrio en una zona) el comprobante se pide al pagar
+        zona = ZonaEnvio.objects.create(nombre="Oeste", tarifa=5000)
+        BarrioZona.objects.create(zona=zona, nombre="El Peñón")
         r = self.comprar(metodo_pago="transferencia")
         self.assertContains(r, "Adjunta el comprobante de la transferencia")
         self.assertFalse(Pedido.objects.exists())
@@ -503,3 +508,237 @@ class HU07FestivosTests(PruebaConArchivos):
         DetallePedido.objects.create(pedido=pedido, producto=producto, referencia="Pulsera", precio_unitario=20000)
         pedido.calcular_produccion()
         self.assertEqual(pedido.fecha_limite, date(2026, 11, 17))
+
+
+# ----------------------------------------------------------------------
+# HU 30: costo de envío según la zona (Sprint 3)
+# ----------------------------------------------------------------------
+
+class HU30EnvioBase(BaseTienda):
+    def setUp(self):
+        super().setUp()
+        self.sur = ZonaEnvio.objects.create(nombre="Sur", tarifa=5000)
+        BarrioZona.objects.create(zona=self.sur, nombre="Ciudad Jardín")
+        self.gratis = ZonaEnvio.objects.create(nombre="Sur cercana", tarifa=0)
+        BarrioZona.objects.create(zona=self.gratis, nombre="Valle del Lili")
+
+    def envio(self, ciudad, barrio=""):
+        return self.client.get(reverse("pedidos:calcular_envio"), {"ciudad": ciudad, "barrio": barrio}).json()
+
+    def tarifas(self):
+        TarifaPeso.objects.create(peso_hasta=500, valor=12000)
+        TarifaPeso.objects.create(peso_hasta=1000, valor=18000)
+
+
+class HU30ZonasCaliTests(HU30EnvioBase):
+    def test_ca1_zona_con_tarifa_fija(self):
+        r = self.comprar(barrio_lista="Ciudad Jardín", barrio="")
+        pedido = Pedido.objects.get()
+        self.assertRedirects(r, reverse("pedidos:confirmado", args=[pedido.pk]))
+        self.assertEqual((pedido.barrio, pedido.costo_envio, pedido.envio_costo_estado),
+                         ("Ciudad Jardín", Decimal("5000"), "calculado"))
+        self.assertEqual(pedido.total, Decimal("73000"))  # $68.000 + $5.000
+
+    def test_ca1_zona_con_envio_gratis(self):
+        self.agregar_al_carrito()
+        r = self.envio("Cali", "Valle del Lili")
+        self.assertEqual((r["valor"], r["texto"]), (0, "Gratis"))
+
+    def test_ca1_el_barrio_escrito_a_mano_tambien_se_reconoce(self):
+        self.agregar_al_carrito()
+        self.assertEqual(self.envio(" CALI ", "ciudad jardin")["valor"], 5000)
+
+    def test_ca1_el_pago_muestra_la_lista_de_barrios_con_otro_barrio(self):
+        self.agregar_al_carrito()
+        r = self.client.get(reverse("pedidos:pagar"))
+        self.assertContains(r, '<option value="Ciudad Jardín">Ciudad Jardín</option>', html=True)
+        self.assertContains(r, '<option value="otro">Otro barrio</option>', html=True)
+
+    def test_ca1_una_zona_inactiva_no_se_usa(self):
+        ZonaEnvio.objects.filter(pk=self.sur.pk).update(activa=False)
+        self.agregar_al_carrito()
+        self.assertTrue(self.envio("Cali", "Ciudad Jardín")["por_confirmar"])
+
+    def test_ca1_un_barrio_no_puede_estar_en_dos_zonas(self):
+        with self.assertRaises(ValidationError):
+            BarrioZona(zona=self.gratis, nombre="ciudad jardin").full_clean()
+
+    def test_ca2_cali_fuera_de_zona_queda_por_confirmar(self):
+        r = self.comprar(barrio_lista="otro", barrio="San Antonio")
+        pedido = Pedido.objects.get()
+        self.assertEqual((pedido.barrio, pedido.costo_envio, pedido.envio_costo_estado),
+                         ("San Antonio", None, "por_confirmar"))
+        self.assertEqual(pedido.total, Decimal("68000"))
+        r = self.client.get(r.url)
+        self.assertContains(r, "depende de la hora y la distancia")
+        self.assertContains(r, "Por confirmar")
+
+    def test_ca2_sin_zonas_cargadas_todo_cali_queda_por_confirmar(self):
+        ZonaEnvio.objects.all().delete()
+        self.agregar_al_carrito()
+        r = self.envio("Cali", "Ciudad Jardín")
+        self.assertTrue(r["por_confirmar"])
+        self.assertIn("depende de la hora y de la distancia", r["mensaje"])
+
+    def test_ca2_con_envio_por_confirmar_la_transferencia_se_hace_despues(self):
+        r = self.comprar(barrio_lista="otro", barrio="San Antonio", metodo_pago="transferencia")
+        pedido = Pedido.objects.get()
+        self.assertFalse(pedido.comprobante)
+        self.assertContains(self.client.get(r.url), "No transfieras todavía")
+
+    def test_el_barrio_es_obligatorio(self):
+        r = self.comprar(barrio_lista="", barrio="")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "Este dato es obligatorio para poder despachar tu pedido.")
+        self.assertFalse(Pedido.objects.exists())
+
+
+class HU30OtrasCiudadesTests(HU30EnvioBase):
+    def test_ca3_otra_ciudad_segun_el_peso_total(self):
+        self.tarifas()
+        self.agregar_al_carrito(cantidad=2)  # 2 x 50 g = 100 g
+        r = self.envio("Bogotá")
+        self.assertEqual((r["peso"], r["valor"]), (100, 12000))
+        Producto.objects.filter(pk=self.producto.pk).update(peso=400)  # 800 g
+        self.assertEqual(self.envio("Bogotá")["valor"], 18000)
+
+    def test_ca3_el_limite_de_cada_rango_esta_incluido(self):
+        self.tarifas()
+        Producto.objects.filter(pk=self.producto.pk).update(peso=500)
+        self.agregar_al_carrito()
+        self.assertEqual(self.envio("Medellín")["valor"], 12000)
+
+    def test_ca3_las_ciudades_cerca_de_cali_tambien_van_por_peso(self):
+        self.tarifas()
+        self.agregar_al_carrito()
+        self.assertEqual(self.envio("Jamundí")["valor"], 12000)
+
+    def test_ca3_si_pesa_mas_que_el_ultimo_rango_queda_por_confirmar(self):
+        self.tarifas()
+        Producto.objects.filter(pk=self.producto.pk).update(peso=1500)
+        self.agregar_al_carrito()
+        r = self.envio("Bogotá")
+        self.assertTrue(r["por_confirmar"])
+        self.assertIn("Servientrega", r["mensaje"])
+
+    def test_ca3_sin_tabla_de_pesos_queda_por_confirmar(self):
+        self.agregar_al_carrito()
+        self.assertTrue(self.envio("Pasto")["por_confirmar"])
+
+    def test_ca3_el_pedido_guarda_el_peso_y_el_costo(self):
+        self.tarifas()
+        self.comprar(ciudad="Pereira", barrio="Centro")
+        pedido = Pedido.objects.get()
+        self.assertEqual((pedido.peso_total, pedido.costo_envio, pedido.total),
+                         (50, Decimal("12000"), Decimal("80000")))
+
+    def test_ca4_el_peso_es_obligatorio_y_mayor_a_cero(self):
+        for peso in (None, 0):
+            self.producto.peso = peso
+            with self.assertRaises(ValidationError):
+                self.producto.full_clean()
+
+
+class HU30ResumenTests(HU30EnvioBase):
+    def test_ca5_el_envio_aparece_separado_en_el_pago(self):
+        self.agregar_al_carrito()
+        r = self.client.get(reverse("pedidos:pagar"))
+        self.assertContains(r, "data-fila-envio")
+        self.assertContains(r, "Escribe tu ciudad")
+
+    def test_ca5_y_en_la_confirmacion(self):
+        r = self.comprar(barrio_lista="Ciudad Jardín", barrio="")
+        r = self.client.get(r.url)
+        self.assertContains(r, "<span>Productos</span><span>$68.000</span>", html=True)
+        self.assertContains(r, "<span>Envío</span><span>$5.000</span>", html=True)
+        self.assertContains(r, "$73.000")
+
+    def test_el_descuento_no_se_aplica_al_envio(self):
+        from clientes.models import CodigoDescuento
+        CodigoDescuento.objects.create(cliente=self.cliente, codigo="DIEZ", tipo="porcentaje", valor=10,
+                                       vence=timezone.localdate())
+        self.comprar(barrio_lista="Ciudad Jardín", barrio="", codigo="DIEZ")
+        pedido = Pedido.objects.get()
+        # $68.000 - 10% ($6.800) + envío $5.000
+        self.assertEqual((pedido.descuento, pedido.total), (Decimal("6800"), Decimal("66200")))
+
+
+class HU30ConfirmarEnvioTests(HU30EnvioBase):
+    def setUp(self):
+        super().setUp()
+        self.comprar(barrio_lista="otro", barrio="San Antonio", metodo_pago="transferencia")
+        self.pedido = Pedido.objects.get()
+        self.comprador = self.cliente.usuario
+        crear_roles()
+        self.duena = User.objects.create_user("duena", password="x", is_staff=True)
+        self.duena.groups.add(Group.objects.get(name=GRUPO_DUENA))
+        self.disenadora = User.objects.create_user("disenadora", password="x", is_staff=True)
+        self.disenadora.groups.add(Group.objects.get(name=GRUPO_DISENADORA))
+
+    def registrar_valor(self, valor):
+        url = reverse("admin:pedidos_pedido_change", args=[self.pedido.pk])
+        r = self.client.get(url)
+        datos = {k: v for k, v in r.context["adminform"].form.initial.items() if v is not None}
+        datos.update({
+            "costo_envio": valor, "metodo_pago": self.pedido.metodo_pago, "estado_pago": self.pedido.estado_pago,
+            "estado_envio": self.pedido.estado_envio, "estado_produccion": self.pedido.estado_produccion,
+            "detalles-TOTAL_FORMS": "0", "detalles-INITIAL_FORMS": "0",
+        })
+        datos.pop("comprobante", None)
+        datos.pop("empaque", None)
+        datos.pop("cotizacion", None)
+        datos["whatsapp_igual"] = "on" if self.pedido.whatsapp_igual else ""
+        datos["fecha_limite"] = self.pedido.fecha_limite.isoformat()
+        return self.client.post(url, datos)
+
+    def test_ca2_la_duena_registra_el_valor_y_se_avisa_por_correo(self):
+        self.client.force_login(self.duena)
+        r = self.registrar_valor("9000")
+        self.assertEqual(r.status_code, 302)
+        self.pedido.refresh_from_db()
+        self.assertEqual((self.pedido.costo_envio, self.pedido.envio_costo_estado, self.pedido.total),
+                         (Decimal("9000"), "confirmado", Decimal("77000")))
+        self.assertEqual(len(mail.outbox), 1)
+        cuerpo = mail.outbox[0].body
+        self.assertIn("$9.000", cuerpo)
+        self.assertIn("$77.000", cuerpo)
+        self.assertIn(reverse("pedidos:mi_pedido", args=[self.pedido.pk]), cuerpo)
+        self.assertIsNotNone(self.pedido.envio_avisado_en)
+
+    def test_ca2_aviso_por_whatsapp_con_el_valor(self):
+        self.client.force_login(self.duena)
+        self.registrar_valor("9000")
+        r = self.client.get(reverse("admin:pedidos_pedido_avisar_envio", args=[self.pedido.pk]))
+        self.assertTrue(r.url.startswith("https://wa.me/573011112233?text="))
+        self.assertIn("$9.000", unquote(r.url))
+
+    def test_ca2_la_disenadora_no_registra_el_valor(self):
+        self.client.force_login(self.disenadora)
+        r = self.client.get(reverse("admin:pedidos_pedido_change", args=[self.pedido.pk]))
+        self.assertNotIn("costo_envio", r.context["adminform"].form.fields)
+
+    def test_ca2_el_cliente_sube_el_comprobante_cuando_ya_sabe_el_total(self):
+        url = reverse("pedidos:mi_pedido", args=[self.pedido.pk])
+        r = self.client.get(url)
+        self.assertContains(r, "Estamos calculando el valor del envío")
+        self.assertNotContains(r, "Enviar comprobante")
+        self.client.force_login(self.duena)
+        self.registrar_valor("9000")
+        self.client.force_login(self.comprador)
+        r = self.client.get(url)
+        self.assertContains(r, "Transfiere")
+        self.assertContains(r, "$77.000")
+        comprobante = SimpleUploadedFile("pago.pdf", b"%PDF-1.4 comprobante", content_type="application/pdf")
+        self.client.post(url, {"comprobante": comprobante})
+        self.pedido.refresh_from_db()
+        self.assertTrue(self.pedido.comprobante.name.endswith(".pdf"))
+
+    def test_otro_cliente_no_ve_el_pedido(self):
+        iniciar_sesion_cliente(self, "otra@correo.com")
+        r = self.client.get(reverse("pedidos:mi_pedido", args=[self.pedido.pk]))
+        self.assertEqual(r.status_code, 404)
+
+    def test_el_panel_de_produccion_avisa_que_el_envio_esta_por_confirmar(self):
+        self.client.force_login(self.disenadora)
+        r = self.client.get(reverse("pedidos:panel_detalle", args=[self.pedido.pk]))
+        self.assertContains(r, "Por confirmar")

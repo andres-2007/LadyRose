@@ -4,7 +4,7 @@ Página web de Ladyrose (bisutería artesanal) hecha en Django para el proyecto 
 
 - Sprint 1: HU 02, 09, 13, 15, 18, 20, 21, 23, 25, 31 y 34.
 - Sprint 2: HU 01, 03, 04, 08, 10, 11, 16, 19, 24 y 26.
-- Sprint 3 (en curso): HU 07, 27 y 28.
+- Sprint 3 (en curso): HU 07, 27, 28 y 30.
 
 Equipo: Andres David Duarte y Alejandro Riomaña.
 
@@ -81,7 +81,7 @@ Cada criterio de aceptación tiene su prueba automática:
 python manage.py test
 ```
 
-Tienen que salir 183 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 183.
+Tienen que salir 209 pruebas en OK, con 1 "skipped" si están en SQLite. Esa es la prueba de dos pagos al mismo tiempo por el último cupo (HU 21), que solo corre en PostgreSQL porque SQLite no deja bloquear filas. Con PostgreSQL corren las 209.
 
 Los nombres de las pruebas dicen la HU y el CA que revisan, por ejemplo `HU04EstadosTests.test_ca2_terminado_pasa_a_listos_para_envio`.
 
@@ -152,6 +152,7 @@ Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la pág
 | 07 | Tiempo de fabricación mínimo y máximo en el producto y en su ficha; tabla de tiempos de envío por ciudad en el panel; en el pago, al escribir la ciudad, se ve el tiempo de envío y las fechas estimadas de entrega (en días hábiles, sin festivos de Colombia); aviso de la transportadora para otras ciudades | `catalogo/models.py`, `pedidos/entregas.py`, `core/festivos.py`, `templates/pedidos/_entrega_estimada.html` |
 | 27 | Cuentas de cliente (nombre, correo, contraseña, WhatsApp y cumpleaños opcionales); códigos de descuento por cliente con porcentaje o valor, vencimiento y un solo uso; código en el pago; en el panel, cumpleaños de los próximos 7 días, clientes que ya compraron y envío del código por correo o WhatsApp con su nombre | `clientes/` (modelos, panel y pruebas), `pedidos/views.py`, `templates/clientes/`, `templates/pedidos/pagar.html` |
 | 28 | Cada solicitud de cotización y cada pregunta del formulario "¿Tienes una pregunta?" (ficha del producto y del curso) queda como consulta con nombre, WhatsApp, producto o curso y fecha; estados Nueva, Contactada, Compró y Descartada; resaltado de las que llevan más de 24 horas hábiles sin respuesta; botón de WhatsApp con el producto; consultas del mes que terminaron en compra | `consultas/` (modelos, señales, panel y pruebas), `core/festivos.py`, `templates/consultas/` |
+| 30 | Zonas de Cali con sus barrios y tarifa fija (gratis o un valor); en Cali fuera de las zonas el domicilio queda "por confirmar" y la dueña registra el valor en el panel y avisa al cliente por correo (automático) y WhatsApp; otras ciudades según el peso total y una tabla de rangos de peso; peso obligatorio en cada producto; el envío aparece aparte en el resumen | `pedidos/envios.py`, `pedidos/avisos.py`, `pedidos/admin.py`, `templates/pedidos/_resumen_pedido.html`, `templates/pedidos/mi_pedido.html` |
 
 Para la HU 07:
 
@@ -178,11 +179,23 @@ Para la HU 28:
 - Solo la dueña ve las consultas. La diseñadora sigue viendo las cotizaciones con su estado de seguimiento.
 - Los clics sueltos en "Comprar por WhatsApp" no cuentan como consulta, porque la página no conoce el nombre ni el número de quien escribe.
 
+Para la HU 30:
+
+- **Las zonas, los barrios y la tabla de pesos empiezan vacíos**, así que al principio todos los envíos salen "Por confirmar". La dueña los llena cuando tenga los valores.
+- Zonas de Cali: **Pedidos › Zonas de Cali**. Cada zona tiene un nombre, una tarifa (0 = envío gratis) y su lista de barrios. Un barrio solo puede estar en una zona. Una zona se puede desactivar sin borrarla.
+- Otras ciudades: **Pedidos › Tarifas por peso (otras ciudades)**. Cada fila es "hasta X gramos cuesta Y", con los valores de Servientrega. Se usa la primera fila que alcance para el peso total del pedido (el límite está incluido). Jamundí, Yumbo, Palmira, Candelaria y cualquier ciudad que no sea Cali van por esta tabla.
+- Queda "Por confirmar" cuando: es Cali y el barrio no está en ninguna zona activa (o el cliente eligió "Otro barrio"), o es otra ciudad y no hay tabla o el pedido pesa más que la última fila.
+- En el pago, si la ciudad es Cali, el barrio se elige de una lista con la opción "Otro barrio" (se escribe a mano). El costo del envío se ve al momento y aparece en su propia fila del resumen. Si está por confirmar, el total dice "sin envío" y se explica que en Cali depende de la hora y la distancia.
+- Si el envío está por confirmar y el pago es por transferencia, el cliente **no transfiere todavía**: espera el valor. Cuando la dueña lo registra en el pedido (campo **Costo del envío**), el total se recalcula, el envío queda "Confirmado por la dueña" y al cliente le llega un correo con el valor, el nuevo total y el enlace a su pedido (`/pedido/<número>/`), donde sube el comprobante. En el pedido también está el botón **Avisar por WhatsApp** con el mismo mensaje.
+- Cada producto tiene un **peso en gramos obligatorio** (sección Fabricación). Los productos que ya existían quedaron con 50 g; la dueña o la diseñadora lo corrigen en cada uno.
+- El descuento de la HU 27 no se aplica al envío. Solo la dueña puede registrar el costo del envío; la diseñadora lo ve en el panel de producción.
+- Los pedidos que ya existían y no se habían despachado quedan con el envío "Por confirmar".
+
 Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `clientes`, `consultas`, `cursos`, `cotizaciones`, `pedidos` y `core`).
 
 ## Roles del panel
 
-- Dueña: puede todo. Crea, edita y elimina productos, categorías, colecciones y cursos; maneja pedidos, empaques, inscripciones, la configuración de la tienda, la historia y las visitas por canal; ve a los clientes y crea y envía los códigos de descuento (HU 27), y hace el seguimiento de las consultas (HU 28).
+- Dueña: puede todo. Crea, edita y elimina productos, categorías, colecciones y cursos; maneja pedidos, empaques, inscripciones, la configuración de la tienda, la historia y las visitas por canal; ve a los clientes y crea y envía los códigos de descuento (HU 27), hace el seguimiento de las consultas (HU 28), y maneja las zonas de Cali, la tabla de pesos y el costo de envío de cada pedido (HU 30).
 - Diseñadora de accesorios: crea y edita productos, categorías y colecciones, pero no puede eliminarlos. Los cursos solo los ve. Ve las cotizaciones y, en el panel de producción, cambia el estado de los pedidos y le escribe al cliente.
 
 Los grupos se crean solos al correr `migrate`.

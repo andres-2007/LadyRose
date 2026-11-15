@@ -7,16 +7,16 @@
   <span class="antetitulo">Pedido {{ pedido.numero }}</span>
   <h1>¡Gracias, {{ pedido.nombre|primer_nombre }}!</h1>
   <p class="texto-suave">Recibimos tu pedido y ya está en la lista de la diseñadora. Te escribimos por WhatsApp para coordinar el envío.
-    {% if pedido.metodo_pago == "transferencia" %}Primero revisamos el comprobante de tu transferencia.{% else %}Pagas cuando lo recibas.{% endif %}</p>
+    {% if pedido.metodo_pago == "transferencia" and pedido.envio_por_confirmar %}{% elif pedido.metodo_pago == "transferencia" %}Primero revisamos el comprobante de tu transferencia.{% else %}Pagas cuando lo recibas.{% endif %}</p>
+  {# HU 30 CA 2: el envío quedó por confirmar #}
+  {% if pedido.envio_por_confirmar %}
+    <div class="aviso aviso--rosa">{% if pedido.ciudad_es_cali %}En Cali el valor del domicilio depende de la hora y la distancia.{% else %}El envío se calcula con Servientrega según el peso.{% endif %}
+      Te avisamos el valor por correo y WhatsApp antes de despachar.{% if pedido.metodo_pago == "transferencia" %} No transfieras todavía: con el aviso te llega el enlace para pagar el total y subir el comprobante.{% endif %}</div>
+  {% endif %}
 
   <div class="resumen">
     <h2>Resumen</h2>
-    {% for d in pedido.detalles.all %}
-      <div class="resumen__fila"><span>{{ d.referencia }}{% if d.talla %} · {{ d.talla }}{% endif %}{% if d.color %} · {{ d.color }}{% endif %} × {{ d.cantidad }}</span><span>{{ d.subtotal|pesos }}</span></div>
-    {% endfor %}
-    {% if pedido.empaque %}<div class="resumen__fila"><span>{{ pedido.empaque.nombre }}</span><span>{{ pedido.costo_empaque|pesos }}</span></div>{% endif %}
-    {% if pedido.descuento %}<div class="resumen__fila resumen__fila--descuento"><span>Descuento ({{ pedido.codigo_descuento.codigo }})</span><span>- {{ pedido.descuento|pesos }}</span></div>{% endif %}
-    <div class="resumen__fila resumen__fila--total"><span>Total</span><span>{{ pedido.total|pesos }}</span></div>
+    {% include "pedidos/_resumen_pedido.html" %}
     <hr class="separador">
     <dl class="lista-datos">
       <div><dt>Recibe</dt><dd>{{ pedido.nombre_recibe }} · {{ pedido.telefono_recibe }}</dd></div>

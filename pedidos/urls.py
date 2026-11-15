@@ -12,7 +12,9 @@ urlpatterns = [
     path("pagar/", views.pagar, name="pagar"),
     path("pagar/tiempo-de-entrega/", views.estimar, name="estimar_entrega"),
     path("pagar/codigo/", views.aplicar_codigo, name="aplicar_codigo"),
+    path("pagar/envio/", views.calcular_envio_vista, name="calcular_envio"),
     path("pedido/<int:pk>/confirmado/", views.confirmado, name="confirmado"),
+    path("pedido/<int:pk>/", views.mi_pedido, name="mi_pedido"),
     # Panel de producción
     path("panel/pedidos/", views.panel, name="panel"),
     path("panel/pedidos/<int:pk>/", views.panel_detalle, name="panel_detalle"),

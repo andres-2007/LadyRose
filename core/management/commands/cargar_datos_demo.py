@@ -448,13 +448,19 @@ class Command(BaseCommand):
             pedido.total = pedido.subtotal + pedido.costo_empaque
             pedido.calcular_produccion()
             pedido.estado_produccion = estado
+            # HU 30: sin zonas ni tarifas cargadas, el envío queda por confirmar
+            pedido.peso_total = p.peso
+            pedido.envio_costo_estado = Pedido.EstadoEnvioCosto.POR_CONFIRMAR
+            pedido.envio_detalle = "Cali, fuera de las zonas con tarifa fija"
             pedido.save()
         # Un pedido personalizado que viene de una cotización
         personal = Pedido.objects.create(
             nombre="Laura Gómez", correo="laura@correo.com", telefono="3157654321", direccion="Carrera 100 # 11-60",
             barrio="Ciudad Jardín", ciudad="Cali", metodo_pago=Pedido.MetodoPago.TRANSFERENCIA,
             cotizacion=cotizacion, motivo=cotizacion.motivo, tecnica="Enfilado", dias_elaboracion=4,
-            subtotal=Decimal("25000"), total=Decimal("25000"),
+            subtotal=Decimal("25000"), total=Decimal("25000"), peso_total=50,
+            envio_costo_estado=Pedido.EstadoEnvioCosto.POR_CONFIRMAR,
+            envio_detalle="Cali, fuera de las zonas con tarifa fija",
         )
         DetallePedido.objects.create(pedido=personal, referencia="Correa para celular personalizada",
                                      color="Lila", material="Cuentas de colores y letras", cantidad=1,

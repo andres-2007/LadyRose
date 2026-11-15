@@ -143,6 +143,8 @@
           <div><dt>Recibe</dt><dd>{{ pedido.nombre_recibe }} · {{ pedido.telefono_recibe }}</dd></div>
           <div><dt>Dirección</dt><dd>{{ pedido.direccion }}, {{ pedido.barrio }}, {{ pedido.ciudad }}{% if pedido.indicaciones %}<br><span class="texto-suave">{{ pedido.indicaciones }}</span>{% endif %}</dd></div>
           <div><dt>Envío</dt><dd>{{ pedido.get_estado_envio_display }}</dd></div>
+          {# HU 30: costo del envío; si está por confirmar, la dueña lo registra antes de despachar #}
+          <div><dt>Costo del envío</dt><dd>{% if pedido.envio_por_confirmar %}<strong class="texto-rosa">Por confirmar</strong> · la dueña lo registra antes de despachar{% elif pedido.costo_envio == 0 %}Gratis{% elif pedido.costo_envio is not None %}{{ pedido.costo_envio|pesos }}{% else %}—{% endif %}</dd></div>
         </dl>
         {% if perms.pedidos.delete_pedido %}
           <p style="margin:14px 0 0"><a class="enlace-flecha" href="{% url 'admin:pedidos_pedido_change' pedido.pk %}">Ver pago y envío en el panel</a></p>

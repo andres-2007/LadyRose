@@ -3,7 +3,10 @@ from django.core.exceptions import ValidationError
 
 from clientes.models import CodigoDescuento, CodigoInvalido
 
-from .models import MAX_NOTA, Pedido, TipoEmpaque
+from .envios import calcular_envio
+from .models import MAX_NOTA, BarrioZona, Pedido, TipoEmpaque
+
+OTRO_BARRIO = "otro"
 
 FORMATOS_COMPROBANTE = ("image/jpeg", "image/png", "application/pdf")
 TAMANO_MAXIMO_MB = 5
@@ -30,6 +33,9 @@ class PedidoForm(forms.ModelForm):
         widget=forms.TextInput(attrs={"placeholder": "Ej. CUMPLE-PAULA-7K3Q", "autocomplete": "off",
                                       "data-codigo-descuento": ""}),
     )
+
+    # HU 30: en Cali el barrio se escoge de la lista de barrios con tarifa fija, o "Otro barrio"
+    barrio_lista = forms.ChoiceField(label="Barrio", required=False)
 
     class Meta:
         model = Pedido
@@ -64,17 +70,27 @@ class PedidoForm(forms.ModelForm):
             "comprobante": forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,application/pdf"}),
         }
 
-    def __init__(self, *args, usuario=None, **kwargs):
+    def __init__(self, *args, usuario=None, items=None, **kwargs):
         self.usuario = usuario
         self.codigo_descuento = None
+        self.items = items or []  # HU 30: (producto, cantidad) para calcular el envío
+        self.envio = None
         super().__init__(*args, **kwargs)
+        barrios = BarrioZona.objects.filter(zona__activa=True).values_list("nombre", flat=True)
+        self.fields["barrio_lista"].choices = (
+            [("", "Escoge tu barrio")] + [(b, b) for b in barrios] + [(OTRO_BARRIO, "Otro barrio")]
+        )
+        self.hay_barrios = bool(barrios)
         # HU 24 CA 1: datos obligatorios para el despacho
-        for campo in ("nombre", "telefono", "direccion", "barrio", "ciudad", "metodo_pago"):
+        for campo in ("nombre", "telefono", "direccion", "ciudad", "metodo_pago"):
             self.fields[campo].required = True
             self.fields[campo].error_messages["required"] = MENSAJE_OBLIGATORIO
         self.fields["metodo_pago"].error_messages["required"] = "Elige cómo vas a pagar."
         for campo in ("nombre_recibe", "telefono_recibe", "whatsapp", "comprobante"):
             self.fields[campo].required = False
+        # El barrio se revisa en clean(): puede venir de la lista (HU 30) o escrito a mano
+        self.fields["barrio"].required = False
+        self.fields["barrio"].label = "Barrio"
         self.fields["metodo_pago"].choices = Pedido.MetodoPago.choices
 
     def clean_codigo(self):
@@ -109,10 +125,40 @@ class PedidoForm(forms.ModelForm):
         else:
             datos["nombre_recibe"] = datos.get("nombre", "")
             datos["telefono_recibe"] = datos.get("telefono", "")
-        # HU 24 CA 3: si paga antes por transferencia, adjunta el comprobante
-        if datos.get("metodo_pago") == Pedido.MetodoPago.TRANSFERENCIA and not datos.get("comprobante"):
+        # HU 30: barrio de la lista (Cali) o escrito a mano
+        elegido = datos.get("barrio_lista")
+        if elegido and elegido != OTRO_BARRIO:
+            datos["barrio"] = elegido
+        if not (datos.get("barrio") or "").strip():
+            self.add_error("barrio", MENSAJE_OBLIGATORIO)
+        # HU 30: costo del envío según la zona o el peso
+        if datos.get("ciudad"):
+            self.envio = calcular_envio(self.items, datos["ciudad"], datos.get("barrio", ""))
+        # HU 24 CA 3: si paga antes por transferencia, adjunta el comprobante.
+        # HU 30: si el envío está por confirmar, transfiere después, cuando se le confirme el valor.
+        por_confirmar = self.envio is not None and self.envio.por_confirmar
+        if (datos.get("metodo_pago") == Pedido.MetodoPago.TRANSFERENCIA and not datos.get("comprobante")
+                and not por_confirmar):
             self.add_error("comprobante", "Adjunta el comprobante de la transferencia para confirmar el pedido.")
         return datos
+
+
+class ComprobanteForm(forms.Form):
+    """HU 30: el cliente sube el comprobante cuando ya conoce el valor del envío."""
+
+    comprobante = forms.FileField(
+        label="Comprobante de la transferencia",
+        widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,application/pdf"}),
+        error_messages={"required": "Adjunta el comprobante de la transferencia."},
+    )
+
+    def clean_comprobante(self):
+        archivo = self.cleaned_data["comprobante"]
+        if archivo.content_type not in FORMATOS_COMPROBANTE:
+            raise ValidationError("El comprobante debe ser una imagen JPG o PNG, o un PDF.")
+        if archivo.size > TAMANO_MAXIMO_MB * 1024 * 1024:
+            raise ValidationError(f"El comprobante debe pesar máximo {TAMANO_MAXIMO_MB} MB.")
+        return archivo
 
 
 class AvisoClienteForm(forms.Form):

@@ -29,6 +29,75 @@ def normalizar_ciudad(texto):
     return " ".join(texto.lower().replace(".", " ").split())
 
 
+# ----------------------------------------------------------------------
+# HU 30: costo de envío según la zona
+# ----------------------------------------------------------------------
+
+class ZonaEnvio(models.Model):
+    """Zona de Cali con tarifa fija de domicilio (por ejemplo, una zona del sur con envío gratis)."""
+
+    nombre = models.CharField("Nombre de la zona", max_length=100, unique=True)
+    tarifa = models.DecimalField("Tarifa del domicilio", max_digits=10, decimal_places=0,
+                                 validators=[MinValueValidator(0)],
+                                 help_text="En pesos. Ponga 0 si el domicilio es gratis en esta zona.")
+    activa = models.BooleanField("Activa", default=True,
+                                 help_text="Desmárquela para dejar de usar la tarifa sin borrar la zona.")
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name = "zona de Cali"
+        verbose_name_plural = "zonas de Cali"
+
+    def __str__(self):
+        return self.nombre
+
+
+class BarrioZona(models.Model):
+    """Barrio de Cali que pertenece a una zona con tarifa fija."""
+
+    zona = models.ForeignKey(ZonaEnvio, on_delete=models.CASCADE, related_name="barrios", verbose_name="Zona")
+    nombre = models.CharField("Barrio", max_length=100)
+    nombre_normalizado = models.CharField(max_length=100, unique=True, editable=False)
+
+    class Meta:
+        ordering = ["nombre"]
+        verbose_name = "barrio"
+        verbose_name_plural = "barrios"
+
+    def __str__(self):
+        return self.nombre
+
+    def clean(self):
+        normalizado = normalizar_ciudad(self.nombre)
+        repetido = BarrioZona.objects.filter(nombre_normalizado=normalizado).exclude(pk=self.pk).first()
+        if repetido:
+            raise ValidationError({"nombre": f"Este barrio ya está en la zona {repetido.zona}."})
+
+    def save(self, *args, **kwargs):
+        self.nombre = " ".join(self.nombre.split())
+        self.nombre_normalizado = normalizar_ciudad(self.nombre)
+        super().save(*args, **kwargs)
+
+
+class TarifaPeso(models.Model):
+    """Tarifa de envío a otras ciudades según el peso total del pedido (la dueña la copia de Servientrega)."""
+
+    peso_hasta = models.PositiveIntegerField(
+        "Hasta (gramos)", unique=True, validators=[MinValueValidator(1)],
+        help_text="Peso máximo del rango. El rango empieza donde termina el anterior.",
+    )
+    valor = models.DecimalField("Valor del envío", max_digits=10, decimal_places=0,
+                                validators=[MinValueValidator(0)])
+
+    class Meta:
+        ordering = ["peso_hasta"]
+        verbose_name = "tarifa por peso (otras ciudades)"
+        verbose_name_plural = "tarifas por peso (otras ciudades)"
+
+    def __str__(self):
+        return f"Hasta {self.peso_hasta} g: ${self.valor:,.0f}".replace(",", ".")
+
+
 class TiempoEnvio(models.Model):
     """HU 07: tiempo estimado de envío según la ciudad de destino, administrable por la dueña."""
 
@@ -166,6 +235,23 @@ class Pedido(models.Model):
     )
     descuento = models.DecimalField("Descuento", max_digits=12, decimal_places=0, default=0)
 
+    # ----- HU 30: costo de envío -----
+    class EstadoEnvioCosto(models.TextChoices):
+        CALCULADO = "calculado", "Calculado al pagar"
+        POR_CONFIRMAR = "por_confirmar", "Por confirmar"
+        CONFIRMADO = "confirmado", "Confirmado por la dueña"
+
+    peso_total = models.PositiveIntegerField("Peso total (gramos)", default=0)
+    costo_envio = models.DecimalField(
+        "Costo del envío", max_digits=10, decimal_places=0, null=True, blank=True,
+        validators=[MinValueValidator(0)],
+        help_text="Si el envío está por confirmar, escriba aquí el valor. Al guardar se avisa al cliente por correo.",
+    )
+    envio_costo_estado = models.CharField("Estado del costo de envío", max_length=20, choices=EstadoEnvioCosto.choices,
+                                          default=EstadoEnvioCosto.CALCULADO)
+    envio_detalle = models.CharField("Cómo se calculó el envío", max_length=200, blank=True)
+    envio_avisado_en = models.DateTimeField("Aviso del envío enviado el", null=True, blank=True)
+
     # HU 31: red social desde la que llegó la persona que compró
     canal_origen = models.CharField("Canal de origen", max_length=20, choices=VisitaOrigen.Canal.choices,
                                     blank=True)
@@ -242,6 +328,20 @@ class Pedido(models.Model):
         if len(numero) == 10 and numero.startswith("3"):
             numero = "57" + numero
         return numero
+
+    # ----- HU 30 -----
+    @property
+    def ciudad_es_cali(self):
+        return normalizar_ciudad(self.ciudad) in {"cali", "santiago de cali"}
+
+    @property
+    def envio_por_confirmar(self):
+        return self.envio_costo_estado == self.EstadoEnvioCosto.POR_CONFIRMAR
+
+    def calcular_total(self):
+        """Productos menos el descuento, más el empaque y el envío (si ya se conoce)."""
+        self.total = self.subtotal - self.descuento + self.costo_empaque + (self.costo_envio or 0)
+        return self.total
 
     def cambiar_estado(self, estado):
         self.estado_produccion = estado
