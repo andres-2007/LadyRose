@@ -710,6 +710,7 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 
 /* ---------- HU 12: métodos de pago en línea ---------- */
 .radios--pago .radio-tarjeta { align-items: center; }
+.radio-tarjeta[hidden] { display: none; }
 .radio-tarjeta .metodo-logo { display: grid; place-items: center; flex: 0 0 auto; width: 40px; height: 40px; margin-left: auto; border-radius: 10px; font-weight: 600; font-size: .78rem; letter-spacing: 0; }
 .radio-tarjeta .metodo-logo--nequi { background: #200020; color: #ff2d8a; font-size: 1.1rem; }
 .radio-tarjeta .metodo-logo--pse { background: #0a4f9c; color: #fff; }

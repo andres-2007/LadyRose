@@ -21,7 +21,8 @@ from core.templatetags.ladyrose import pesos
 from . import pagos, pasarela
 from .carrito import Carrito, CarritoMayorista, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
-from .envios import MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio
+from .envios import (MENSAJE_SIN_CONTRA_ENTREGA, MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio,
+                     permite_contra_entrega)
 from .mayorista import estado_minimo
 from .precotizacion import generar_pdf, numero_precotizacion
 from .forms import AvisoClienteForm, ComprobanteForm, PedidoForm
@@ -217,6 +218,8 @@ def _pagar(request, c):
         # HU 30: costo del envío si la página vuelve con la ciudad y el barrio ya escritos
         "envio": form.envio,
         "mensaje_transferencia_por_confirmar": MENSAJE_TRANSFERENCIA_POR_CONFIRMAR,
+        "contra_entrega_disponible": permite_contra_entrega(form["ciudad"].value() or ""),
+        "mensaje_sin_contra_entrega": MENSAJE_SIN_CONTRA_ENTREGA,
         "empaques": TipoEmpaque.objects.filter(activo=True),
         "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
         # HU 07: tiempo de fabricación del carrito y, si ya hay ciudad, la fecha estimada
@@ -246,6 +249,8 @@ def calcular_envio_vista(request, mayorista=False):
         return JsonResponse({"ok": False})
     envio = calcular_envio(lineas, ciudad, request.GET.get("barrio", ""))
     return JsonResponse({"ok": True, **envio.como_dict(),
+                         # HU 12 CA 5: si la ciudad va por transportadora no se ofrece contra entrega
+                         "contra_entrega": permite_contra_entrega(ciudad),
                          "texto": pesos(envio.valor) if envio.valor else ("Gratis" if envio.valor == 0 else "Por confirmar")})
 
 

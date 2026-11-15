@@ -137,7 +137,7 @@
                 <div><strong>Transferencia Bancolombia</strong><span>Pagas con el botón de Bancolombia desde tu cuenta.</span></div>
                 <span class="metodo-logo metodo-logo--bancolombia" aria-hidden="true">B</span>
               </label>
-              <label class="radio-tarjeta">
+              <label class="radio-tarjeta" data-contra-entrega {% if not contra_entrega_disponible %}hidden{% endif %}>
                 <input type="radio" name="metodo_pago" value="contra_entrega" {% if form.metodo_pago.value == "contra_entrega" %}checked{% endif %}>
                 <div><strong>Pago contra entrega</strong><span>Pagas en efectivo cuando recibes el pedido.</span></div>
               </label>
@@ -147,6 +147,7 @@
               </label>
             </div>
             {% if form.metodo_pago.errors %}<ul class="errores">{% for e in form.metodo_pago.errors %}<li>{{ e }}</li>{% endfor %}</ul>{% endif %}
+            <p class="campo__ayuda" data-sin-contra-entrega {% if contra_entrega_disponible or form.metodo_pago.errors %}hidden{% endif %}>{{ mensaje_sin_contra_entrega }}</p>
           </div>
           <div data-mostrar-si="metodo_pago=nequi|pse|bancolombia">
             <div class="aviso aviso--neutro" data-si-envio-calculado {% if envio.por_confirmar %}hidden{% endif %}>Al confirmar te llevamos a la página segura de pagos. Tu pedido queda confirmado cuando el pago sea aprobado; si lo cancelas, tu carrito sigue igual.</div>

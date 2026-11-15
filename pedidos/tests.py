@@ -627,7 +627,8 @@ class HU30OtrasCiudadesTests(HU30EnvioBase):
 
     def test_ca3_el_pedido_guarda_el_peso_y_el_costo(self):
         self.tarifas()
-        self.comprar(ciudad="Pereira", barrio="Centro")
+        # HU 12 CA 5: a otras ciudades no hay pago contra entrega
+        self.comprar(ciudad="Pereira", barrio="Centro", metodo_pago="nequi")
         pedido = Pedido.objects.get()
         self.assertEqual((pedido.peso_total, pedido.costo_envio, pedido.total),
                          (50, Decimal("12000"), Decimal("80000")))

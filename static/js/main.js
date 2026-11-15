@@ -190,6 +190,17 @@ document.addEventListener("DOMContentLoaded", function () {
         // HU 12: avisos del pago en línea según si el envío ya tiene valor
         $$("[data-si-envio-por-confirmar]").forEach(function (e) { e.hidden = !porConfirmar; });
         $$("[data-si-envio-calculado]").forEach(function (e) { e.hidden = porConfirmar; });
+        // HU 12 CA 5: a otras ciudades por transportadora no aparece el pago contra entrega
+        var opcionContra = $("[data-contra-entrega]"), avisoContra = $("[data-sin-contra-entrega]");
+        if (opcionContra) {
+          var permite = !r || r.contra_entrega !== false;
+          opcionContra.hidden = !permite;
+          if (!permite) {
+            var radioContra = $("input", opcionContra);
+            if (radioContra.checked) { radioContra.checked = false; radioContra.dispatchEvent(new Event("change", { bubbles: true })); }
+          }
+          if (avisoContra) avisoContra.hidden = permite;
+        }
         recalcular();
       };
       if (!ciudad) { poner(null); return; }
