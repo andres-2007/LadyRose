@@ -1,0 +1,12 @@
+{% load ladyrose %}
+{# HU 14 CA 3: cuánto dinero falta para llegar al monto mínimo del pedido al por mayor #}
+<div class="avance-minimo{% if estado.alcanza %} avance-minimo--listo{% endif %}" aria-live="polite">
+  <div class="avance-minimo__barra" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ estado.porcentaje }}" aria-label="Avance hacia el monto mínimo">
+    <span style="width:{{ estado.porcentaje }}%"></span>
+  </div>
+  {% if estado.alcanza %}
+    <p class="avance-minimo__texto">Tu pedido ya alcanza el monto mínimo de {{ estado.minimo|pesos }}.</p>
+  {% else %}
+    <p class="avance-minimo__texto">Te faltan <strong>{{ estado.falta|pesos }}</strong> para llegar al monto mínimo de {{ estado.minimo|pesos }}.</p>
+  {% endif %}
+</div>

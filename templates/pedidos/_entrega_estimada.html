@@ -1,6 +1,6 @@
 {# HU 07: tiempo de fabricación, tiempo de envío según la ciudad y fechas estimadas de entrega. #}
 {# static/js/main.js lo actualiza cada vez que el cliente escribe la ciudad. #}
-<div class="entrega-estimada ancho" data-entrega data-url="{% url 'pedidos:estimar_entrega' %}" aria-live="polite">
+<div class="entrega-estimada ancho" data-entrega data-url="{% if mayorista %}{% url 'pedidos:estimar_entrega_mayorista' %}{% else %}{% url 'pedidos:estimar_entrega' %}{% endif %}" aria-live="polite">
   <h3><svg aria-hidden="true"><use href="#i-calendario"/></svg>¿Cuándo te llega?</h3>
   <dl class="entrega-estimada__tiempos">
     <div>

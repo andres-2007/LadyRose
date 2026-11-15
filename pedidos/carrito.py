@@ -2,13 +2,18 @@
 
 Cada línea se identifica por producto + talla + color, así se pueden llevar
 dos tallas del mismo producto como líneas distintas.
+
+HU 14: el pedido al por mayor usa otro carrito (CarritoMayorista), separado del
+carrito al detal, con el precio mayorista de cada referencia.
 """
 from decimal import Decimal
 
 from catalogo.models import Producto, TallaProducto
 
 CLAVE_SESION = "carrito"
+CLAVE_SESION_MAYORISTA = "carrito_mayorista"
 MAXIMO_POR_LINEA = 20
+MAXIMO_POR_LINEA_MAYORISTA = 500
 
 
 class ErrorCarrito(Exception):
@@ -16,20 +21,31 @@ class ErrorCarrito(Exception):
 
 
 class Carrito:
+    clave_sesion = CLAVE_SESION
+    maximo_por_linea = MAXIMO_POR_LINEA
+    mayorista = False
+
     def __init__(self, request):
         self.session = request.session
-        self.lineas = self.session.get(CLAVE_SESION, {})
+        self.lineas = self.session.get(self.clave_sesion, {})
 
     def _guardar(self):
-        self.session[CLAVE_SESION] = self.lineas
+        self.session[self.clave_sesion] = self.lineas
         self.session.modified = True
+
+    # Lo que cambia entre el carrito al detal y el mayorista
+    def disponible(self, producto):
+        return producto.se_puede_comprar
+
+    def precio(self, producto):
+        return producto.precio_actual
 
     @staticmethod
     def clave(producto_id, talla_id=None, color=""):
         return f"{producto_id}|{talla_id or ''}|{color}"
 
     def agregar(self, producto, talla=None, color="", cantidad=1):
-        if not producto.se_puede_comprar:
+        if not self.disponible(producto):
             raise ErrorCarrito("Este producto ya no está disponible.")
         # HU 19: si el producto tiene tallas hay que elegir una disponible
         tallas = producto.tallas_disponibles
@@ -43,7 +59,7 @@ class Carrito:
         clave = self.clave(producto.pk, talla.pk if talla else None, color)
         nueva = self.lineas.get(clave, 0) + max(int(cantidad), 1)
         # Una pieza única solo se puede comprar una vez (HU 08)
-        tope = 1 if producto.pieza_unica else MAXIMO_POR_LINEA
+        tope = 1 if producto.pieza_unica else self.maximo_por_linea
         self.lineas[clave] = min(nueva, tope)
         self._guardar()
         return clave
@@ -57,7 +73,7 @@ class Carrito:
             return
         producto_id = int(clave.split("|")[0])
         unica = Producto.objects.filter(pk=producto_id, pieza_unica=True).exists()
-        self.lineas[clave] = min(cantidad, 1 if unica else MAXIMO_POR_LINEA)
+        self.lineas[clave] = min(cantidad, 1 if unica else self.maximo_por_linea)
         self._guardar()
 
     def quitar(self, clave):
@@ -79,10 +95,10 @@ class Carrito:
             producto_id, talla_id, color = clave.split("|", 2)
             producto = productos.get(int(producto_id))
             talla = tallas.get(int(talla_id)) if talla_id else None
-            if not producto or not producto.se_puede_comprar or (talla_id and not talla):
+            if not producto or not self.disponible(producto) or (talla_id and not talla):
                 invalidas.append(clave)
                 continue
-            precio = producto.precio_actual
+            precio = self.precio(producto)
             resultado.append({
                 "clave": clave, "producto": producto, "talla": talla, "color": color,
                 "cantidad": cantidad, "precio": precio, "subtotal": precio * cantidad,
@@ -98,3 +114,17 @@ class Carrito:
 
     def __len__(self):
         return sum(self.lineas.values())
+
+
+class CarritoMayorista(Carrito):
+    """HU 14: carrito del módulo al por mayor, separado del carrito al detal."""
+
+    clave_sesion = CLAVE_SESION_MAYORISTA
+    maximo_por_linea = MAXIMO_POR_LINEA_MAYORISTA
+    mayorista = True
+
+    def disponible(self, producto):
+        return producto.se_vende_al_por_mayor
+
+    def precio(self, producto):
+        return producto.precio_mayorista

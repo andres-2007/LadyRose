@@ -671,3 +671,39 @@ em, .cursiva { font-family: var(--serif); font-style: italic; }
 [data-barrio] > div + div:not([hidden]) { margin-top: 10px; }
 [data-barrio] label { font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 500; }
 .campo--error [data-barrio] label, [data-barrio].campo--error label { color: var(--error); }
+
+/* ---------- HU 14: módulo de compras al por mayor ---------- */
+.referencias-mayor { padding-bottom: 64px; }
+.referencias-mayor__cabecera { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 24px; margin-bottom: 18px; }
+.referencias-mayor__cabecera h2 { margin: 0; }
+.referencias-mayor__lista { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--linea); }
+.referencia-mayor { display: grid; grid-template-columns: 72px 1fr; gap: 10px 16px; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--linea); }
+.referencia-mayor__foto { width: 72px; height: 72px; border-radius: var(--radio); overflow: hidden; background: var(--arena); }
+.referencia-mayor__foto img { width: 100%; height: 100%; object-fit: cover; }
+.referencia-mayor__datos { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.referencia-mayor__nombre { font-family: var(--serif); font-size: 1.3rem; line-height: 1.2; }
+.referencia-mayor__nombre:hover { color: var(--rosa); }
+.referencia-mayor__precios { grid-column: 2; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.referencia-mayor__detal { font-size: .85rem; color: var(--tinta-suave); }
+.referencia-mayor__precio { font-size: 1.15rem; color: var(--tinta); }
+@media (min-width: 768px) {
+  .referencia-mayor { grid-template-columns: 88px minmax(0, 1fr) auto; }
+  .referencia-mayor__foto { width: 88px; height: 88px; }
+  .referencia-mayor__precios { grid-column: auto; flex-direction: column; align-items: flex-end; text-align: right; }
+}
+.referencia-mayor__agregar { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.referencia-mayor__agregar select, .referencia-mayor__cantidad { min-height: 44px; padding: 8px 10px; border: 1px solid var(--linea); border-radius: var(--radio); background: var(--blanco); font: inherit; }
+.referencia-mayor__cantidad { width: 86px; }
+.barra-pedido-mayor { position: sticky; top: 74px; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 18px; margin: 0 0 24px; padding: 12px 16px; background: var(--blanco); border: 1px solid var(--linea); border-radius: var(--radio-grande); box-shadow: var(--sombra); }
+@media (min-width: 768px) {
+  .referencia-mayor { grid-template-columns: 88px minmax(0, 1fr) auto auto; }
+  .referencia-mayor__agregar { grid-column: auto; flex-wrap: nowrap; justify-content: flex-end; }
+}
+.avance-minimo { margin: 12px 0 0; }
+.avance-minimo__barra { height: 8px; border-radius: 99px; background: var(--arena); overflow: hidden; }
+.avance-minimo__barra span { display: block; height: 100%; background: var(--fucsia); border-radius: 99px; transition: width .3s ease; }
+.avance-minimo--listo .avance-minimo__barra span { background: var(--exito); }
+.avance-minimo__texto { margin: 6px 0 0; font-size: .9rem; }
+.avance-minimo--listo .avance-minimo__texto { color: var(--exito); }
+.barra-pedido-mayor__texto { flex: 1 1 260px; }
+.boton--inactivo, .boton--inactivo:hover { background: var(--arena-oscura); border-color: var(--arena-oscura); color: var(--tinta-suave); cursor: not-allowed; }

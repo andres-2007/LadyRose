@@ -1,6 +1,8 @@
 Django>=5.2.8,<5.3
 Pillow>=10.0
 openpyxl>=3.1
+# HU 14: pre-cotización del pedido al por mayor en PDF
+reportlab>=4.2
 # Solo si van a usar PostgreSQL en vez de SQLite:
 # psycopg[binary]>=3.1
 # Solo para guardar las fotos en la nube en producción (MEDIA_STORAGE=s3):

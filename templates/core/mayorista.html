@@ -21,9 +21,85 @@
         <li>Precios especiales para revender.</li>
         <li>Envíos a toda Colombia.</li>
       </ul>
-      <a class="boton" style="margin-top:26px" target="_blank" rel="noopener"
-         href="{% whatsapp_tienda LADYROSE.WHATSAPP 'Hola, quiero información para compras al por mayor' %}">Escríbenos por WhatsApp</a>
+      <a class="boton boton--borde" style="margin-top:26px" target="_blank" rel="noopener"
+         href="{% whatsapp_tienda LADYROSE.WHATSAPP 'Hola, quiero información para compras al por mayor' %}">¿Dudas? Escríbenos por WhatsApp</a>
     </div>
   </div>
+
+  {# HU 14: resumen del pedido al por mayor (va aparte del carrito al detal) #}
+  {% if unidades_pedido %}
+  <div class="barra-pedido-mayor" role="status">
+    <div class="barra-pedido-mayor__texto">
+      <div><strong>Tu pedido al por mayor:</strong> {{ unidades_pedido }} unidad{{ unidades_pedido|pluralize:"es" }} · {{ subtotal_pedido|pesos }}</div>
+      {% include "pedidos/_avance_minimo.html" with estado=estado_minimo %}
+    </div>
+    <a class="boton boton--rosa" href="{% url 'pedidos:carrito_mayorista' %}">Ver pedido</a>
+  </div>
+  {% endif %}
+
+  {# HU 14 CA 1: precio mayorista de cada referencia #}
+  <section class="referencias-mayor" aria-labelledby="titulo-referencias">
+    <div class="referencias-mayor__cabecera">
+      <h2 id="titulo-referencias">Referencias al por mayor</h2>
+      {% if categorias|length > 1 %}
+      <nav class="chips" aria-label="Categorías">
+        <a class="chip {% if not categoria_actual %}activo{% endif %}" href="{% url 'core:mayorista' %}">Todo</a>
+        {% for c in categorias %}
+          <a class="chip {% if categoria_actual == c.slug %}activo{% endif %}" href="?categoria={{ c.slug }}">{{ c.nombre }}</a>
+        {% endfor %}
+      </nav>
+      {% endif %}
+    </div>
+
+    {% if productos %}
+    <ul class="referencias-mayor__lista">
+      {% for p in productos %}
+      <li class="referencia-mayor" id="ref-{{ p.pk }}">
+        <a class="referencia-mayor__foto" href="{{ p.get_absolute_url }}">
+          {% with foto=p.foto_principal %}{% if foto %}<img src="{{ foto.imagen.url }}" alt="{{ p.nombre }}" loading="lazy">{% endif %}{% endwith %}
+        </a>
+        <div class="referencia-mayor__datos">
+          <span class="tarjeta__categoria">{{ p.categoria }}</span>
+          <a class="referencia-mayor__nombre" href="{{ p.get_absolute_url }}">{{ p.nombre }}</a>
+          {% if p.material %}<span class="texto-suave">{{ p.material }}</span>{% endif %}
+        </div>
+        <div class="referencia-mayor__precios">
+          <span class="referencia-mayor__detal">Al detal <del>{{ p.precio|pesos }}</del></span>
+          <strong class="referencia-mayor__precio">{{ p.precio_mayorista|pesos }}</strong>
+          <span class="texto-suave">por unidad</span>
+        </div>
+        <form class="referencia-mayor__agregar" method="post" action="{% url 'pedidos:agregar_mayorista' p.pk %}">
+          {% csrf_token %}
+          {% with tallas=p.tallas_disponibles colores=p.lista_colores %}
+          {% if tallas %}
+          <select name="talla" aria-label="Talla de {{ p.nombre }}" required>
+            <option value="">Talla</option>
+            {% for t in tallas %}<option value="{{ t.pk }}">{{ t.nombre }} ({{ t.medida }})</option>{% endfor %}
+          </select>
+          {% endif %}
+          {% if colores|length > 1 %}
+          <select name="color" aria-label="Color de {{ p.nombre }}" required>
+            <option value="">Color</option>
+            {% for c in colores %}<option>{{ c }}</option>{% endfor %}
+          </select>
+          {% endif %}
+          {% endwith %}
+          {% if p.pieza_unica %}
+            <input type="hidden" name="cantidad" value="1"><span class="etiqueta">Pieza única</span>
+          {% else %}
+          <input class="referencia-mayor__cantidad" type="number" name="cantidad" value="1" min="1" max="500" aria-label="Cantidad de {{ p.nombre }}">
+          {% endif %}
+          <button class="boton boton--borde" type="submit">Agregar</button>
+        </form>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="vacio">
+      <h2>Pronto publicamos las referencias al por mayor</h2>
+      <p>Mientras tanto, escríbenos por WhatsApp y te enviamos la lista de precios.</p>
+    </div>
+    {% endif %}
+  </section>
 </div>
 {% endblock %}

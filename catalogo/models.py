@@ -88,6 +88,10 @@ class ProductoQuerySet(models.QuerySet):
         """Lo que se puede comprar: visible y sin vender (HU 08)."""
         return self.filter(visible=True, vendida=False)
 
+    def mayoristas(self):
+        """HU 14: productos que se pueden comprar en el módulo al por mayor."""
+        return self.en_venta().filter(precio_mayorista__isnull=False)
+
     def galeria(self):
         """HU 08: piezas únicas que ya se vendieron."""
         return self.filter(visible=True, pieza_unica=True, vendida=True)
@@ -109,6 +113,13 @@ class Producto(models.Model):
     precio_oferta = models.DecimalField(
         "Precio de oferta", max_digits=10, decimal_places=0, null=True, blank=True,
         validators=[MinValueValidator(0)],
+    )
+    # HU 14: precio para los comerciantes que compran en el módulo al por mayor.
+    # Si se deja vacío, el producto no aparece en el módulo mayorista.
+    precio_mayorista = models.DecimalField(
+        "Precio mayorista", max_digits=10, decimal_places=0, null=True, blank=True,
+        validators=[MinValueValidator(1, "El precio mayorista debe ser mayor a cero.")],
+        help_text="Precio por unidad para compras al por mayor. Déjelo vacío si el producto no se vende al por mayor.",
     )
     oferta_inicio = models.DateField("Inicio de la oferta", null=True, blank=True)
     oferta_fin = models.DateField("Fin de la oferta", null=True, blank=True)
@@ -182,6 +193,9 @@ class Producto(models.Model):
         if (self.dias_fabricacion_min and self.dias_elaboracion
                 and self.dias_fabricacion_min > self.dias_elaboracion):
             raise ValidationError({"dias_fabricacion_min": "El tiempo mínimo no puede ser mayor que el máximo."})
+        # HU 14: el precio mayorista tiene que ser menor que el precio al detal
+        if self.precio_mayorista is not None and self.precio is not None and self.precio_mayorista >= self.precio:
+            raise ValidationError({"precio_mayorista": "El precio mayorista debe ser menor al precio normal."})
         if self.precio_oferta is not None:
             if not (self.oferta_inicio and self.oferta_fin):
                 raise ValidationError("Para crear una oferta indique la fecha de inicio y la de fin.")
@@ -231,6 +245,10 @@ class Producto(models.Model):
     @property
     def en_galeria(self):
         return self.pieza_unica and self.vendida
+
+    @property
+    def se_vende_al_por_mayor(self):
+        return self.se_puede_comprar and self.precio_mayorista is not None
 
     @property
     def se_puede_comprar(self):
