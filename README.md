@@ -152,6 +152,7 @@ Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la pág
 | 07 | Tiempo de fabricación mínimo y máximo en el producto y en su ficha; tabla de tiempos de envío por ciudad en el panel; en el pago, al escribir la ciudad, se ve el tiempo de envío y las fechas estimadas de entrega (en días hábiles, sin festivos de Colombia); aviso de la transportadora para otras ciudades | `catalogo/models.py`, `pedidos/entregas.py`, `core/festivos.py`, `templates/pedidos/_entrega_estimada.html` |
 | 12 | Pago con Nequi, PSE y Transferencia Bancolombia por una pasarela (Wompi, por ahora con la pasarela de pruebas del proyecto) además de contra entrega; si el pago se cancela o falla el cliente vuelve con su carrito intacto; el pedido pasa a "Pago aprobado" solo con el aviso firmado de la pasarela (webhook); correo de confirmación con el resumen; a otras ciudades por transportadora no aparece contra entrega | `pedidos/pasarela.py`, `pedidos/pagos.py`, `pedidos/avisos.py`, `templates/pedidos/pasarela.html`, `templates/pedidos/correos/` |
 | 14 | Módulo al por mayor con el precio mayorista de cada referencia (campo nuevo en el producto); pedido mayorista con su propio carrito, separado del carrito al detal; solo se confirma si el subtotal llega al monto mínimo vigente de la HU 25 (sin cantidad mínima por referencia); barra con cuánto dinero falta; pre-cotización en PDF antes de confirmar | `pedidos/carrito.py`, `pedidos/mayorista.py`, `pedidos/precotizacion.py`, `templates/core/mayorista.html`, `templates/pedidos/carrito_mayorista.html` |
+| 22 | Al entrar al panel la dueña ve tarjetas con los pedidos por despachar (y cuántos ya están terminados), las cotizaciones sin responder (y cuántas pasaron las 24 horas hábiles) y las visitas de hoy y del mes separadas por Instagram, Facebook, TikTok, WhatsApp y entrada directa; cada tarjeta abre la lista con el detalle; los datos se calculan cada vez que entra o recarga | `core/resumen.py`, `core/templatetags/ladyrose.py`, `templates/admin/index.html`, `static/css/panel.css` |
 | 27 | Cuentas de cliente (nombre, correo, contraseña, WhatsApp y cumpleaños opcionales); códigos de descuento por cliente con porcentaje o valor, vencimiento y un solo uso; código en el pago; en el panel, cumpleaños de los próximos 7 días, clientes que ya compraron y envío del código por correo o WhatsApp con su nombre | `clientes/` (modelos, panel y pruebas), `pedidos/views.py`, `templates/clientes/`, `templates/pedidos/pagar.html` |
 | 28 | Cada solicitud de cotización y cada pregunta del formulario "¿Tienes una pregunta?" (ficha del producto y del curso) queda como consulta con nombre, WhatsApp, producto o curso y fecha; estados Nueva, Contactada, Compró y Descartada; resaltado de las que llevan más de 24 horas hábiles sin respuesta; botón de WhatsApp con el producto; consultas del mes que terminaron en compra | `consultas/` (modelos, señales, panel y pruebas), `core/festivos.py`, `templates/consultas/` |
 | 30 | Zonas de Cali con sus barrios y tarifa fija (gratis o un valor); en Cali fuera de las zonas el domicilio queda "por confirmar" y la dueña registra el valor en el panel y avisa al cliente por correo (automático) y WhatsApp; otras ciudades según el peso total y una tabla de rangos de peso; peso obligatorio en cada producto; el envío aparece aparte en el resumen | `pedidos/envios.py`, `pedidos/avisos.py`, `pedidos/admin.py`, `templates/pedidos/_resumen_pedido.html`, `templates/pedidos/mi_pedido.html` |
@@ -180,6 +181,14 @@ Para la HU 14:
 - El pedido al por mayor tiene su propio carrito: lo que se agrega ahí no se mezcla con el carrito normal. Se confirma con el mismo formulario de envío y pago, y en el panel queda con el tipo "Al por mayor".
 - El monto mínimo se revisa al confirmar con el valor que tenga la configuración en ese momento.
 - La pre-cotización en PDF se descarga desde el pedido al por mayor. Usa la librería `reportlab` (ya está en `requirements.txt`; si ya tenían el entorno, corran otra vez `pip install -r requirements.txt`).
+
+Para la HU 22:
+
+- Las tarjetas salen arriba de la pantalla inicial del panel (`/admin/`). La diseñadora ve las de pedidos y cotizaciones, pero no las de visitas, que son solo para la dueña.
+- "Pedidos por despachar" no cuenta los pedidos que esperan el pago en línea o cuyo pago no se completó (HU 12). En la lista de pedidos quedó el filtro **Despacho** con las mismas reglas.
+- "Cotizaciones sin responder" son las solicitudes cuya consulta sigue en "Nueva" (HU 28). La tarjeta se resalta si alguna lleva más de 24 horas hábiles.
+- Las visitas usan el registro de la HU 31. El día y el mes se cuentan con la hora de Colombia. En las tarjetas de visitas cada canal abre su propia lista.
+- `cargar_datos_demo` reparte las visitas de ejemplo en los últimos días para que se vea la diferencia entre hoy y el mes.
 
 Para la HU 27:
 
@@ -212,7 +221,7 @@ Para la HU 30:
 - El descuento de la HU 27 no se aplica al envío. Solo la dueña puede registrar el costo del envío; la diseñadora lo ve en el panel de producción.
 - Los pedidos que ya existían y no se habían despachado quedan con el envío "Por confirmar".
 
-Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `clientes`, `consultas`, `cursos`, `cotizaciones`, `pedidos` y `core`).
+Las pruebas de cada HU están en el `tests.py` de su carpeta (`catalogo`, `clientes`, `consultas`, `cursos`, `cotizaciones`, `pedidos` y `core`). Las de la HU 22 están en `core/tests_panel.py`.
 
 ## Roles del panel
 
@@ -224,7 +233,7 @@ Los grupos se crean solos al correr `migrate`.
 ## Cosas que dependen del Sprint 3
 
 - HU 25 (CA 3): el monto queda guardado y se muestra. La validación del pedido mayorista contra ese monto ya está hecha en la HU 14.
-- HU 31 (CA 4): el canal de cada visita y de cada compra ya se guarda y se ve en el panel. Las tarjetas del panel principal de la dueña son de la HU 22.
+- HU 31 (CA 4): el canal de cada visita y de cada compra ya se guarda y se ve en el panel. Las tarjetas del panel principal de la dueña ya están hechas en la HU 22.
 
 ## Subirlo a GitHub
 

@@ -38,7 +38,7 @@
     </div>
     <div class="lr-tarjeta lr-tarjeta--visitas">
       <a class="lr-tarjeta__enlace" href="{{ resumen.visitas_mes.url }}">
-        <span class="lr-tarjeta__titulo">Visitas de {{ resumen.generado|date:"F"|lower }}</span>
+        <span class="lr-tarjeta__titulo">Visitas de {{ resumen.hoy|date:"F"|lower }}</span>
         <strong class="lr-tarjeta__numero">{{ resumen.visitas_mes.total }}</strong>
       </a>
       <ul class="lr-canales">

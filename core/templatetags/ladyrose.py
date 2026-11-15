@@ -87,4 +87,5 @@ def resumen_panel(context):
             datos[clave] = visitas
     if datos:
         datos["generado"] = timezone.localtime()
+        datos["hoy"] = hoy
     return datos
