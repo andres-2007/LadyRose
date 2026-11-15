@@ -5,7 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, permission_required
 from django.core.mail import send_mail
 from django.db import transaction
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,6 +20,7 @@ from .carrito import Carrito, CarritoMayorista, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
 from .envios import MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio
 from .mayorista import estado_minimo
+from .precotizacion import generar_pdf, numero_precotizacion
 from .forms import AvisoClienteForm, ComprobanteForm, PedidoForm
 from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
 
@@ -117,6 +118,20 @@ def agregar_mayorista(request, producto_id):
     if request.POST.get("siguiente") == "pedido":
         return redirect("pedidos:carrito_mayorista")
     return redirect(reverse("core:mayorista") + f"#ref-{producto.pk}")
+
+
+def precotizacion_mayorista(request):
+    """HU 14 CA 4: descarga la vista previa del pedido al por mayor como pre-cotización en PDF."""
+    items = CarritoMayorista(request).items()
+    if not items:
+        messages.info(request, "Agrega referencias a tu pedido para descargar la pre-cotización.")
+        return redirect("pedidos:carrito_mayorista")
+    subtotal = sum((i["subtotal"] for i in items), 0)
+    ahora = timezone.localtime()
+    pdf = generar_pdf(items, estado_minimo(subtotal), usuario=request.user, ahora=ahora)
+    respuesta = HttpResponse(pdf, content_type="application/pdf")
+    respuesta["Content-Disposition"] = f'attachment; filename="ladyrose-{numero_precotizacion(ahora)}.pdf"'
+    return respuesta
 
 
 @require_POST

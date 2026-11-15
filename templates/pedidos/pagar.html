@@ -166,6 +166,7 @@
       <div class="resumen__fila" data-fila-envio><span>Envío</span><span data-envio-resumen class="{% if not envio or envio.valor is None %}texto-suave{% endif %}">{% if not envio %}Escribe tu ciudad{% elif envio.valor is None %}Por confirmar{% elif envio.valor == 0 %}Gratis{% else %}{{ envio.valor|pesos }}{% endif %}</span></div>
       <div class="resumen__fila resumen__fila--total"><span>Total</span><span data-total data-subtotal="{{ subtotal|floatformat:0 }}" data-descuento="{{ descuento|floatformat:0 }}" data-envio="{% if envio.valor %}{{ envio.valor|floatformat:0 }}{% else %}0{% endif %}">{{ subtotal|pesos }}</span></div>
       <p class="campo__ayuda" data-total-nota {% if not envio.por_confirmar %}hidden{% endif %}>El total no incluye el envío: te avisamos su valor antes de despachar.</p>
+      {% if mayorista %}<a class="enlace-flecha" href="{% url 'pedidos:precotizacion_mayorista' %}" download>Descargar pre-cotización (PDF)</a>{% endif %}
     </aside>
   </div>
 </div>

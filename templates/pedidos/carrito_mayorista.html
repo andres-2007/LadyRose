@@ -63,6 +63,8 @@
         <span class="boton boton--bloque boton--inactivo" aria-disabled="true" style="margin-top:16px">Continuar con el pedido</span>
         <p class="resumen__nota">Puedes continuar cuando tu pedido llegue al monto mínimo.</p>
       {% endif %}
+      {# HU 14 CA 4: vista previa del pedido antes de confirmarlo #}
+      <a class="boton boton--borde boton--bloque" href="{% url 'pedidos:precotizacion_mayorista' %}" style="margin-top:10px" download>Descargar pre-cotización (PDF)</a>
     </aside>
   </div>
   {% else %}

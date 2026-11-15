@@ -15,6 +15,7 @@ urlpatterns = [
     path("al-por-mayor/pedido/agregar/<int:producto_id>/", views.agregar_mayorista, name="agregar_mayorista"),
     path("al-por-mayor/pedido/actualizar/", views.actualizar_mayorista, name="actualizar_mayorista"),
     path("al-por-mayor/pedido/quitar/", views.quitar_mayorista, name="quitar_mayorista"),
+    path("al-por-mayor/pedido/pre-cotizacion.pdf", views.precotizacion_mayorista, name="precotizacion_mayorista"),
     path("al-por-mayor/pagar/", views.pagar_mayorista, name="pagar_mayorista"),
     path("al-por-mayor/pagar/tiempo-de-entrega/", views.estimar, {"mayorista": True}, name="estimar_entrega_mayorista"),
     path("al-por-mayor/pagar/codigo/", views.aplicar_codigo, {"mayorista": True}, name="aplicar_codigo_mayorista"),
