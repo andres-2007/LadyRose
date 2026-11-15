@@ -153,6 +153,14 @@ LADYROSE = {
         "Nequi o Bancolombia a nombre de Ladyrose. Escríbenos por WhatsApp y te enviamos el número de cuenta.",
     ),
     "CORREO": os.environ.get("LADYROSE_CORREO", "ladyrose@gmail.com"),
+    # HU 12: pasarela de pagos en línea (Nequi, PSE y Transferencia Bancolombia).
+    # Escogimos Wompi; por ahora se usa la pasarela de pruebas del proyecto (ver pedidos/pasarela.py).
+    "PASARELA": {
+        "NOMBRE": os.environ.get("PASARELA_NOMBRE", "Wompi (pruebas)"),
+        "LLAVE_PUBLICA": os.environ.get("PASARELA_LLAVE_PUBLICA", "pub_test_ladyrose"),
+        "SECRETO_INTEGRIDAD": os.environ.get("PASARELA_SECRETO_INTEGRIDAD", "test_integrity_ladyrose"),
+        "SECRETO_EVENTOS": os.environ.get("PASARELA_SECRETO_EVENTOS", "test_events_ladyrose"),
+    },
     "CIUDAD": os.environ.get("LADYROSE_CIUDAD", "Cali, Colombia"),
 }
 
