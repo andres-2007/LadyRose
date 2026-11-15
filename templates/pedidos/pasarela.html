@@ -1,0 +1,71 @@
+{% load static ladyrose %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Pago seguro · {{ pasarela.NOMBRE }}</title>
+  <link rel="stylesheet" href="{% static 'css/pasarela.css' %}">
+</head>
+<body>
+  {# HU 12: página de pago de la pasarela de pruebas. Hace las veces del Web Checkout de Wompi. #}
+  <div class="modo-pruebas" role="note">Pasarela de pruebas · no se mueve dinero real</div>
+  <main class="checkout">
+    <header class="checkout__comercio">
+      <img src="{% static 'img/logo-ladyrose.png' %}" alt="" width="64" height="48">
+      <div>
+        <span class="checkout__etiqueta">Pagando a</span>
+        <strong>Ladyrose Accesorios</strong>
+      </div>
+    </header>
+
+    <section class="checkout__monto">
+      <span class="checkout__etiqueta">Total a pagar</span>
+      <strong>{{ pago.monto|pesos }}</strong>
+      <span class="checkout__ref">Referencia {{ pago.referencia }}</span>
+    </section>
+
+    <form method="post" class="checkout__form">
+      {% csrf_token %}
+      {% for nombre, valor in campos %}<input type="hidden" name="{{ nombre }}" value="{{ valor }}">{% endfor %}
+
+      <div class="checkout__metodo">
+        <span class="metodo metodo--{{ pago.metodo }}" aria-hidden="true">{% if pago.metodo == "nequi" %}N{% elif pago.metodo == "pse" %}PSE{% else %}B{% endif %}</span>
+        <div>
+          <span class="checkout__etiqueta">Medio de pago</span>
+          <strong>{{ pago.get_metodo_display }}</strong>
+        </div>
+      </div>
+
+      {% if pago.metodo == "nequi" %}
+        <label class="checkout__campo">Número de celular registrado en Nequi
+          <input type="tel" inputmode="numeric" value="{{ pedido.telefono }}" autocomplete="tel">
+        </label>
+        <p class="checkout__ayuda">Te llega una notificación a la app de Nequi para que apruebes el pago.</p>
+      {% elif pago.metodo == "pse" %}
+        <label class="checkout__campo">Tipo de persona
+          <select><option>Natural</option><option>Jurídica</option></select>
+        </label>
+        <label class="checkout__campo">Banco
+          <select>
+            <option>Bancolombia</option><option>Davivienda</option><option>Banco de Bogotá</option>
+            <option>BBVA Colombia</option><option>Banco de Occidente</option><option>Nequi</option><option>Daviplata</option>
+          </select>
+        </label>
+        <p class="checkout__ayuda">Después de pagar en tu banco vuelves a la tienda.</p>
+      {% else %}
+        <p class="checkout__ayuda">Pagas con el Botón Bancolombia desde tu Sucursal Virtual Personas. Después vuelves a la tienda.</p>
+      {% endif %}
+
+      <button class="checkout__boton" type="submit" name="accion" value="pagar">Pagar {{ pago.monto|pesos }}</button>
+      <button class="checkout__boton checkout__boton--secundario" type="submit" name="accion" value="rechazar">Simular pago rechazado</button>
+      <button class="checkout__cancelar" type="submit" name="accion" value="cancelar">Cancelar y volver a la tienda</button>
+    </form>
+
+    <footer class="checkout__pie">
+      <span>Pago procesado por {{ pasarela.NOMBRE }}</span>
+      <span>Pedido {{ pedido.numero }}{% if pedido.correo %} · {{ pedido.correo }}{% endif %}</span>
+    </footer>
+  </main>
+</body>
+</html>

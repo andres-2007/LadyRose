@@ -4,7 +4,7 @@ Página web de Ladyrose (bisutería artesanal) hecha en Django para el proyecto 
 
 - Sprint 1: HU 02, 09, 13, 15, 18, 20, 21, 23, 25, 31 y 34.
 - Sprint 2: HU 01, 03, 04, 08, 10, 11, 16, 19, 24 y 26.
-- Sprint 3 (en curso): HU 07, 14, 27, 28 y 30.
+- Sprint 3 (en curso): HU 07, 12, 14, 27, 28 y 30.
 
 Equipo: Andres David Duarte y Alejandro Riomaña.
 
@@ -150,6 +150,7 @@ Las fotos que se suben se reducen a máximo 1600 px y se comprimen, y en la pág
 | HU | Qué hace | Archivos principales |
 |---|---|---|
 | 07 | Tiempo de fabricación mínimo y máximo en el producto y en su ficha; tabla de tiempos de envío por ciudad en el panel; en el pago, al escribir la ciudad, se ve el tiempo de envío y las fechas estimadas de entrega (en días hábiles, sin festivos de Colombia); aviso de la transportadora para otras ciudades | `catalogo/models.py`, `pedidos/entregas.py`, `core/festivos.py`, `templates/pedidos/_entrega_estimada.html` |
+| 12 | Pago con Nequi, PSE y Transferencia Bancolombia por una pasarela (Wompi, por ahora con la pasarela de pruebas del proyecto) además de contra entrega; si el pago se cancela o falla el cliente vuelve con su carrito intacto; el pedido pasa a "Pago aprobado" solo con el aviso firmado de la pasarela (webhook); correo de confirmación con el resumen; a otras ciudades por transportadora no aparece contra entrega | `pedidos/pasarela.py`, `pedidos/pagos.py`, `pedidos/avisos.py`, `templates/pedidos/pasarela.html`, `templates/pedidos/correos/` |
 | 14 | Módulo al por mayor con el precio mayorista de cada referencia (campo nuevo en el producto); pedido mayorista con su propio carrito, separado del carrito al detal; solo se confirma si el subtotal llega al monto mínimo vigente de la HU 25 (sin cantidad mínima por referencia); barra con cuánto dinero falta; pre-cotización en PDF antes de confirmar | `pedidos/carrito.py`, `pedidos/mayorista.py`, `pedidos/precotizacion.py`, `templates/core/mayorista.html`, `templates/pedidos/carrito_mayorista.html` |
 | 27 | Cuentas de cliente (nombre, correo, contraseña, WhatsApp y cumpleaños opcionales); códigos de descuento por cliente con porcentaje o valor, vencimiento y un solo uso; código en el pago; en el panel, cumpleaños de los próximos 7 días, clientes que ya compraron y envío del código por correo o WhatsApp con su nombre | `clientes/` (modelos, panel y pruebas), `pedidos/views.py`, `templates/clientes/`, `templates/pedidos/pagar.html` |
 | 28 | Cada solicitud de cotización y cada pregunta del formulario "¿Tienes una pregunta?" (ficha del producto y del curso) queda como consulta con nombre, WhatsApp, producto o curso y fecha; estados Nueva, Contactada, Compró y Descartada; resaltado de las que llevan más de 24 horas hábiles sin respuesta; botón de WhatsApp con el producto; consultas del mes que terminaron en compra | `consultas/` (modelos, señales, panel y pruebas), `core/festivos.py`, `templates/consultas/` |
@@ -160,6 +161,18 @@ Para la HU 07:
 - La dueña edita los tiempos en **Pedidos › Tiempos de envío por ciudad**. Cali viene creada (entrega directa de Ladyrose, sin transportadora). Las ciudades que no estén en la tabla usan el tiempo de "otras ciudades" de **Sitio › Configuración de la tienda**.
 - Si en un pedido hay varios productos, cuenta el que más se demora en fabricarse, porque se hacen al mismo tiempo.
 - Los festivos de Colombia se calculan solos para cualquier año (Ley Emiliani y Semana Santa), en `core/festivos.py`. La fecha límite del panel de producción (HU 01) también los salta.
+
+Para la HU 12:
+
+- **Pasarela escogida: Wompi** (de Bancolombia), porque en un solo lugar recibe Nequi, PSE y el Botón Bancolombia, cobra por transacción y tiene ambiente de pruebas. El proyecto se entrega con una **pasarela de pruebas** (`/pagos/pasarela/`) que funciona igual que el sandbox de Wompi pero sin conectarse a internet: al pagar se ven los botones **Pagar**, **Simular pago rechazado** y **Cancelar y volver a la tienda**. No se mueve dinero real.
+- Cómo funciona: al confirmar con un método en línea se crea el pedido en "Esperando el pago en línea" y un pago con referencia única y firma de integridad (como Wompi). La pasarela le avisa a la tienda con un evento firmado en `/pagos/eventos/` (webhook) y **solo ese aviso** deja el pedido en "Pago aprobado". El cliente vuelve a `/pagos/resultado/`.
+- Si el pago se cancela o lo rechazan, el carrito sigue igual, las piezas únicas vuelven a estar a la venta y el código de descuento queda sin usar.
+- Mientras el pago no esté aprobado, el pedido no le aparece a la diseñadora en el panel de producción. La dueña ve los intentos de pago en el detalle del pedido y en **Pedidos › Pagos en línea**.
+- Si el envío está "Por confirmar" (HU 30) y el cliente escogió pagar en línea, paga desde la página de su pedido cuando la dueña confirme el valor (botón **Pagar ... con Nequi**).
+- Contra entrega: en Cali sí. En otras ciudades solo si en **Tiempos de envío por ciudad** están marcadas como entrega directa (sin transportadora). Si no, la opción desaparece al escribir la ciudad.
+- El correo de confirmación sale cuando el pago queda aprobado o, con contra entrega o transferencia, al confirmar el pedido. Los enlaces del correo usan `LADYROSE_URL_SITIO` del `.env`.
+- Para conectar Wompi de verdad: crear la cuenta en Wompi, poner las llaves en el `.env` (`PASARELA_...`) y cambiar la página de pago por `https://checkout.wompi.co/p/` en `pedidos/pagos.py` (los parámetros ya son los mismos).
+- Las inscripciones a los cursos siguen con la confirmación del pago que hace la dueña (HU 26).
 
 Para la HU 14:
 

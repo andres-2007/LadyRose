@@ -10,13 +10,25 @@
   </header>
 
   {% if pedido.envio_por_confirmar %}
-    <div class="aviso aviso--rosa">Estamos calculando el valor del envío. Te avisamos por correo y WhatsApp apenas lo tengamos{% if pedido.metodo_pago == "transferencia" %}; ahí podrás transferir el total y subir el comprobante aquí mismo{% endif %}.</div>
+    <div class="aviso aviso--rosa">Estamos calculando el valor del envío. Te avisamos por correo y WhatsApp apenas lo tengamos{% if pedido.metodo_pago == "transferencia" %}; ahí podrás transferir el total y subir el comprobante aquí mismo{% elif pedido.pago_en_linea %}; ahí podrás pagar el total en línea desde esta página{% endif %}.</div>
   {% endif %}
 
   <div class="resumen">
     <h2>Resumen</h2>
     {% include "pedidos/_resumen_pedido.html" %}
   </div>
+
+  {# HU 12: pago en línea del pedido (por ejemplo, cuando ya se confirmó el valor del envío) #}
+  {% if puede_pagar_en_linea %}
+    <form method="post" action="{% url 'pedidos:pagar_en_linea' pedido.pk %}" class="bloque-form" style="margin-top:24px">
+      {% csrf_token %}
+      <h2>Paga tu pedido</h2>
+      <p>El total de tu pedido es <strong>{{ pedido.total|pesos }}</strong>. Te llevamos a la página segura de pagos para pagar con {{ pedido.get_metodo_pago_display }}.</p>
+      <button class="boton boton--rosa boton--bloque" type="submit">Pagar {{ pedido.total|pesos }} con {{ pedido.get_metodo_pago_display }}</button>
+    </form>
+  {% elif pedido.pago_aprobado %}
+    <p class="aviso aviso--neutro" style="margin-top:20px">Tu pago con {{ pedido.get_metodo_pago_display }} está aprobado.</p>
+  {% endif %}
 
   {# HU 30: con el valor del envío ya confirmado, el cliente transfiere y sube el comprobante #}
   {% if form %}

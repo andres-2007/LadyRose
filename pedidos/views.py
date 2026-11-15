@@ -1,3 +1,4 @@
+import json
 from urllib.parse import quote
 
 from django.conf import settings
@@ -9,6 +10,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from catalogo.models import Producto, TallaProducto, texto_dias_habiles
@@ -16,13 +18,16 @@ from clientes.models import CodigoDescuento, CodigoInvalido
 from clientes.views import URL_INGRESAR
 from core.templatetags.ladyrose import pesos
 
+from . import pagos, pasarela
+from .avisos import enviar_confirmacion
 from .carrito import Carrito, CarritoMayorista, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
-from .envios import MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio
+from .envios import (MENSAJE_SIN_CONTRA_ENTREGA, MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio,
+                     permite_contra_entrega)
 from .mayorista import estado_minimo
 from .precotizacion import generar_pdf, numero_precotizacion
 from .forms import AvisoClienteForm, ComprobanteForm, PedidoForm
-from .models import DetallePedido, Pedido, TiempoEnvio, TipoEmpaque
+from .models import DetallePedido, Pago, Pedido, TiempoEnvio, TipoEmpaque
 
 ESTADOS_SELECTOR = [
     (Pedido.EstadoProduccion.PENDIENTE, "Pendiente"),
@@ -198,9 +203,14 @@ def _pagar(request, c):
         except CodigoInvalido as error:
             form.add_error("codigo", str(error))
         else:
+            # HU 12: con Nequi, PSE o Transferencia Bancolombia se paga en la pasarela.
+            # El carrito se vacía solo cuando el pago queda aprobado.
+            if pedido.estado_pago == Pedido.EstadoPago.EN_PASARELA:
+                return redirect(pagos.url_pago(request, pagos.crear_pago(pedido)))
+            # HU 12 CA 4: correo con el resumen (contra entrega, transferencia o envío por confirmar)
+            enviar_confirmacion(pedido, request)
             c.vaciar()
-            confirmados = request.session.get("pedidos_confirmados", [])
-            request.session["pedidos_confirmados"] = confirmados + [pedido.pk]
+            _marcar_confirmado(request, pedido)
             return redirect("pedidos:confirmado", pk=pedido.pk)
     productos = [i["producto"] for i in items]
     codigo = form.codigo_descuento if form.is_bound and not form.errors.get("codigo") else None
@@ -211,6 +221,8 @@ def _pagar(request, c):
         # HU 30: costo del envío si la página vuelve con la ciudad y el barrio ya escritos
         "envio": form.envio,
         "mensaje_transferencia_por_confirmar": MENSAJE_TRANSFERENCIA_POR_CONFIRMAR,
+        "contra_entrega_disponible": permite_contra_entrega(form["ciudad"].value() or ""),
+        "mensaje_sin_contra_entrega": MENSAJE_SIN_CONTRA_ENTREGA,
         "empaques": TipoEmpaque.objects.filter(activo=True),
         "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
         # HU 07: tiempo de fabricación del carrito y, si ya hay ciudad, la fecha estimada
@@ -225,6 +237,12 @@ def _carrito_de(request, mayorista):
     return CarritoMayorista(request) if mayorista else Carrito(request)
 
 
+def _marcar_confirmado(request, pedido):
+    """La página de confirmación solo la ve quien hizo el pedido."""
+    confirmados = request.session.get("pedidos_confirmados", [])
+    request.session["pedidos_confirmados"] = confirmados + [pedido.pk]
+
+
 @require_GET
 def calcular_envio_vista(request, mayorista=False):
     """HU 30: costo del envío para la ciudad y el barrio que escribe el cliente."""
@@ -234,6 +252,8 @@ def calcular_envio_vista(request, mayorista=False):
         return JsonResponse({"ok": False})
     envio = calcular_envio(lineas, ciudad, request.GET.get("barrio", ""))
     return JsonResponse({"ok": True, **envio.como_dict(),
+                         # HU 12 CA 5: si la ciudad va por transportadora no se ofrece contra entrega
+                         "contra_entrega": permite_contra_entrega(ciudad),
                          "texto": pesos(envio.valor) if envio.valor else ("Gratis" if envio.valor == 0 else "Por confirmar")})
 
 
@@ -266,6 +286,8 @@ def estimar(request, mayorista=False):
 
 def _crear_pedido(request, form, items, subtotal, mayorista=False):
     with transaction.atomic():
+        # HU 12: un pago en línea que quedó a medias no debe bloquear la nueva compra
+        pagos.soltar_intentos_anteriores(request.user)
         # Las piezas únicas se bloquean para que dos personas no compren la misma (HU 08)
         ids_unicas = [i["producto"].pk for i in items if i["producto"].pieza_unica]
         unicas = Producto.objects.select_for_update().filter(pk__in=ids_unicas)
@@ -289,6 +311,10 @@ def _crear_pedido(request, form, items, subtotal, mayorista=False):
         pedido.envio_costo_estado = envio.estado
         pedido.envio_detalle = envio.detalle
         pedido.calcular_total()
+        # HU 12: el pago en línea se hace en la pasarela. Si el envío está por confirmar,
+        # se paga después, cuando la dueña confirme el valor (como la transferencia de la HU 30).
+        if pedido.pago_en_linea and not envio.por_confirmar:
+            pedido.estado_pago = Pedido.EstadoPago.EN_PASARELA
         pedido.canal_origen = request.session.get("canal_origen", "")
         pedido.save()
         for i in items:
@@ -325,6 +351,110 @@ def mi_pedido(request, pk):
         return redirect("pedidos:mi_pedido", pk=pedido.pk)
     return render(request, "pedidos/mi_pedido.html", {
         "pedido": pedido, "form": form, "datos_transferencia": settings.LADYROSE["DATOS_TRANSFERENCIA"],
+        # HU 12: pago en línea pendiente (por ejemplo, cuando el envío ya quedó confirmado)
+        "puede_pagar_en_linea": _puede_pagar_en_linea(pedido),
+    })
+
+
+def _puede_pagar_en_linea(pedido):
+    return (pedido.pago_en_linea and not pedido.envio_por_confirmar
+            and pedido.estado_pago in (Pedido.EstadoPago.PENDIENTE, Pedido.EstadoPago.EN_PASARELA))
+
+
+# ------------------------------------------------------------------
+# Pago en línea (HU 12): Nequi, PSE y Transferencia Bancolombia
+# ------------------------------------------------------------------
+
+@require_POST
+@login_required(login_url=URL_INGRESAR)
+def pagar_en_linea(request, pk):
+    """El cliente paga un pedido que ya existe (por ejemplo, cuando le confirmaron el envío)."""
+    pedido = get_object_or_404(Pedido, pk=pk, cliente=request.user)
+    if not _puede_pagar_en_linea(pedido):
+        return redirect("pedidos:mi_pedido", pk=pedido.pk)
+    pedido.estado_pago = Pedido.EstadoPago.EN_PASARELA
+    pedido.save(update_fields=["estado_pago"])
+    return redirect(pagos.url_pago(request, pagos.crear_pago(pedido)))
+
+
+def resultado_pago(request):
+    """Página a la que vuelve el cliente desde la pasarela (?id=<transacción>)."""
+    pago = get_object_or_404(Pago.objects.select_related("pedido"), transaccion_id=request.GET.get("id", ""))
+    pedido = pago.pedido
+    if request.user.is_authenticated and pedido.cliente_id not in (None, request.user.pk):
+        raise Http404
+    if pago.estado == Pago.Estado.APROBADO:
+        # Ahora sí se vacía el carrito con el que se hizo el pedido
+        (CarritoMayorista(request) if pedido.es_mayorista else Carrito(request)).vaciar()
+        _marcar_confirmado(request, pedido)
+        return redirect("pedidos:confirmado", pk=pedido.pk)
+    if pago.estado == Pago.Estado.PENDIENTE:
+        return render(request, "pedidos/pago_en_proceso.html", {"pago": pago})
+    # CA 2: si el pago se cancela o falla, vuelve a la tienda con su carrito intacto
+    if pago.estado == Pago.Estado.CANCELADO:
+        texto = "Cancelaste el pago."
+    else:
+        texto = f"Tu pago con {pago.get_metodo_display()} no fue aprobado."
+    messages.warning(request, f"{texto} Tu carrito sigue igual: puedes intentarlo otra vez o escoger otra forma de pago.")
+    return redirect("pedidos:carrito_mayorista" if pedido.es_mayorista else "pedidos:carrito")
+
+
+@csrf_exempt
+@require_POST
+def eventos_pasarela(request):
+    """HU 12 CA 3: webhook de la pasarela. Solo un evento con la firma correcta aprueba el pago.
+
+    La pasarela espera un 200; con otra respuesta vuelve a intentar más tarde.
+    """
+    try:
+        evento = json.loads(request.body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "JSON inválido"}, status=400)
+    if not isinstance(evento, dict) or not pasarela.evento_valido(evento):
+        return JsonResponse({"ok": False, "error": "Firma inválida"}, status=400)
+    pago = pagos.procesar_evento(evento)
+    return JsonResponse({"ok": True, "referencia": pago.referencia if pago else None})
+
+
+def _pago_desde_pasarela(request):
+    """Revisa que el enlace de pago no se haya cambiado (firma de integridad)."""
+    datos = request.GET if request.method == "GET" else request.POST
+    pago = Pago.objects.select_related("pedido").filter(referencia=datos.get("reference", "")).first()
+    if pago is None:
+        raise Http404
+    centavos = pasarela.en_centavos(pago.monto)
+    firma = pasarela.firma_integridad(pago.referencia, centavos)
+    if datos.get("amount-in-cents") != str(centavos) or datos.get("signature:integrity") != firma:
+        raise Http404
+    return pago, datos
+
+
+def pasarela_pago(request):
+    """Página de pago de la pasarela de pruebas (hace las veces del Web Checkout de Wompi)."""
+    pago, datos = _pago_desde_pasarela(request)
+    if request.method == "POST" and not pago.terminado:
+        estado = {
+            "pagar": pasarela.EstadoTransaccion.APROBADA,
+            "rechazar": pasarela.EstadoTransaccion.RECHAZADA,
+            "cancelar": pasarela.EstadoTransaccion.ANULADA,
+        }.get(request.POST.get("accion"))
+        if estado:
+            # La pasarela le avisa a la tienda con un evento firmado, como el webhook de Wompi.
+            # (Con Wompi real, este evento llega por internet a /pagos/eventos/.)
+            evento = pasarela.crear_evento({
+                "id": pasarela.nuevo_id_transaccion(), "reference": pago.referencia,
+                "amount_in_cents": pasarela.en_centavos(pago.monto), "status": estado,
+                "payment_method_type": pasarela.TIPO_METODO.get(pago.metodo, ""),
+                "customer_email": pago.pedido.correo, "currency": pasarela.MONEDA,
+            })
+            pagos.procesar_evento(evento)
+            pago.refresh_from_db()
+    if pago.terminado:
+        # Siempre se vuelve a la página de resultado de la tienda (no a otra que venga en el enlace)
+        return redirect(f"{reverse('pedidos:resultado_pago')}?id={pago.transaccion_id}")
+    return render(request, "pedidos/pasarela.html", {
+        "pago": pago, "pedido": pago.pedido, "datos": datos, "pasarela": pasarela.config(),
+        "campos": [(k, v) for k, v in datos.items() if k not in ("accion", "csrfmiddlewaretoken")],
     })
 
 
@@ -354,7 +484,7 @@ def _puede_cambiar(request):
 
 @_panel
 def panel(request):
-    pendientes = (Pedido.objects.exclude(estado_produccion=Pedido.EstadoProduccion.TERMINADO)
+    pendientes = (Pedido.objects.para_produccion().exclude(estado_produccion=Pedido.EstadoProduccion.TERMINADO)
                   .prefetch_related("detalles__producto__fotos").select_related("empaque"))
     # HU 01 CA 2: dos formas de ordenar independientes
     orden = request.GET.get("orden", "fecha")
@@ -366,11 +496,11 @@ def panel(request):
     tecnica = request.GET.get("tecnica", "")
     if tecnica:
         pendientes = pendientes.filter(tecnica__icontains=tecnica)
-    tecnicas = sorted({t.strip() for valor in Pedido.objects.exclude(tecnica="")
+    tecnicas = sorted({t.strip() for valor in Pedido.objects.para_produccion().exclude(tecnica="")
                        .exclude(estado_produccion=Pedido.EstadoProduccion.TERMINADO)
                        .values_list("tecnica", flat=True) for t in valor.split(",") if t.strip()})
     # HU 04 CA 2: lo terminado sale de la lista y queda en "Listos para envío"
-    listos = (Pedido.objects.filter(estado_produccion=Pedido.EstadoProduccion.TERMINADO,
+    listos = (Pedido.objects.para_produccion().filter(estado_produccion=Pedido.EstadoProduccion.TERMINADO,
                                     estado_envio=Pedido.EstadoEnvio.POR_DESPACHAR)
               .prefetch_related("detalles__producto__fotos").order_by("fecha_limite"))
     return render(request, "pedidos/panel/lista.html", {

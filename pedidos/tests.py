@@ -1,8 +1,10 @@
-"""Pruebas de los criterios de aceptación de las HU 01, 03, 04, 10, 11 y 24 (Sprint 2) y HU 07, 14 y 30 (Sprint 3)."""
+"""Pruebas de los criterios de aceptación de las HU 01, 03, 04, 10, 11 y 24 (Sprint 2) y HU 07, 12, 14 y 30 (Sprint 3)."""
 from datetime import date, datetime, timedelta
 from decimal import Decimal
-from urllib.parse import unquote
+import json
+from urllib.parse import parse_qs, unquote, urlparse
 
+from django.conf import settings
 from django.contrib.auth.models import Group, User
 from django.core import mail
 from django.core.exceptions import ValidationError
@@ -15,10 +17,12 @@ from core.festivos import festivos_colombia, sumar_dias_habiles
 from core.models import ConfiguracionTienda
 from core.roles import GRUPO_DISENADORA, GRUPO_DUENA, crear_roles
 from core.tests_utils import PruebaConArchivos, imagen, iniciar_sesion_cliente
+from clientes.models import CodigoDescuento
 from cotizaciones.models import ImagenReferencia, SolicitudCotizacion
 
+from . import pasarela
 from .entregas import estimar_entrega
-from .models import BarrioZona, DetallePedido, Pedido, TarifaPeso, TiempoEnvio, TipoEmpaque, ZonaEnvio
+from .models import BarrioZona, DetallePedido, Pago, Pedido, TarifaPeso, TiempoEnvio, TipoEmpaque, ZonaEnvio
 
 
 def datos_envio(**extra):
@@ -627,7 +631,8 @@ class HU30OtrasCiudadesTests(HU30EnvioBase):
 
     def test_ca3_el_pedido_guarda_el_peso_y_el_costo(self):
         self.tarifas()
-        self.comprar(ciudad="Pereira", barrio="Centro")
+        # HU 12 CA 5: a otras ciudades no hay pago contra entrega
+        self.comprar(ciudad="Pereira", barrio="Centro", metodo_pago="nequi")
         pedido = Pedido.objects.get()
         self.assertEqual((pedido.peso_total, pedido.costo_envio, pedido.total),
                          (50, Decimal("12000"), Decimal("80000")))
@@ -668,6 +673,7 @@ class HU30ConfirmarEnvioTests(HU30EnvioBase):
         super().setUp()
         self.comprar(barrio_lista="otro", barrio="San Antonio", metodo_pago="transferencia")
         self.pedido = Pedido.objects.get()
+        mail.outbox.clear()  # HU 12: al comprar ya salió el correo de confirmación; aquí se revisa solo el aviso
         self.comprador = self.cliente.usuario
         crear_roles()
         self.duena = User.objects.create_user("duena", password="x", is_staff=True)
@@ -873,3 +879,244 @@ class HU14CompraMayorTests(BaseTienda):
     def test_ca4_sin_referencias_no_hay_pre_cotizacion(self):
         r = self.client.get(reverse("pedidos:precotizacion_mayorista"))
         self.assertRedirects(r, reverse("pedidos:carrito_mayorista"))
+
+
+# ----------------------------------------------------------------------
+# HU 12: métodos de pago locales (Sprint 3)
+# Pruebas con la pasarela de pruebas: pagos aprobados, rechazados y cancelados
+# ----------------------------------------------------------------------
+
+class HU12PagosBase(BaseTienda):
+    def setUp(self):
+        super().setUp()
+        # Envío con valor conocido (para que el pago en línea sea inmediato)
+        zona = ZonaEnvio.objects.create(nombre="Oeste", tarifa=0)
+        BarrioZona.objects.create(zona=zona, nombre="El Peñón")
+
+    def ir_a_pagar(self, metodo="nequi", **extra):
+        """Confirma el pedido con un método en línea y devuelve el enlace de la pasarela."""
+        r = self.comprar(metodo_pago=metodo, **extra)
+        self.assertEqual(r.status_code, 302)
+        self.assertTrue(r.url.startswith(reverse("pedidos:pasarela")))
+        return r.url
+
+    def responder_pasarela(self, url, accion):
+        """El cliente aprueba, rechaza o cancela en la página de la pasarela y vuelve a la tienda."""
+        datos = {k: v[0] for k, v in parse_qs(urlparse(url).query).items()}
+        r = self.client.post(url, {**datos, "accion": accion})
+        return self.client.get(r.url)
+
+    def evento(self, pago, estado="APPROVED", centavos=None, id_transaccion="01-1700000000-12345"):
+        return pasarela.crear_evento({"id": id_transaccion, "reference": pago.referencia, "status": estado,
+                                      "amount_in_cents": centavos or pasarela.en_centavos(pago.monto)})
+
+    def enviar_evento(self, evento):
+        return self.client.post(reverse("pedidos:eventos_pasarela"), json.dumps(evento),
+                                content_type="application/json")
+
+
+class HU12MetodosDePagoTests(HU12PagosBase):
+    # ----- CA 1 -----
+    def test_ca1_ofrece_nequi_pse_bancolombia_y_contra_entrega(self):
+        self.agregar_al_carrito()
+        r = self.client.get(reverse("pedidos:pagar"))
+        for valor, texto in (("nequi", "Nequi"), ("pse", "PSE"), ("bancolombia", "Transferencia Bancolombia"),
+                             ("contra_entrega", "Pago contra entrega")):
+            self.assertContains(r, f'value="{valor}"')
+            self.assertContains(r, texto)
+
+    def test_con_pago_en_linea_va_a_la_pasarela_con_el_monto_firmado(self):
+        url = self.ir_a_pagar("pse")
+        pedido = Pedido.objects.get()
+        pago = pedido.pagos.get()
+        self.assertEqual(pedido.estado_pago, Pedido.EstadoPago.EN_PASARELA)
+        self.assertEqual((pago.metodo, pago.monto, pago.estado), ("pse", Decimal("68000"), Pago.Estado.PENDIENTE))
+        datos = parse_qs(urlparse(url).query)
+        self.assertEqual(datos["amount-in-cents"], ["6800000"])
+        self.assertEqual(datos["signature:integrity"], [pasarela.firma_integridad(pago.referencia, 6800000)])
+        self.assertContains(self.client.get(url), "Pagar $68.000")
+
+    def test_si_cambian_el_monto_en_el_enlace_la_pasarela_no_lo_acepta(self):
+        url = self.ir_a_pagar()
+        self.assertEqual(self.client.get(url.replace("amount-in-cents=6800000", "amount-in-cents=100")).status_code,
+                         404)
+
+    def test_la_firma_de_integridad_es_la_de_wompi(self):
+        # Ejemplo de la documentación de Wompi
+        config = dict(settings.LADYROSE, PASARELA=dict(settings.LADYROSE["PASARELA"],
+                      SECRETO_INTEGRIDAD="prod_integrity_Z5mMke9x0k8gpErbDqwrJXMqsI6SFli6"))
+        with self.settings(LADYROSE=config):
+            self.assertEqual(pasarela.firma_integridad("sk8-438k4-xmxm392-sn2m", 2490000),
+                             "37c8407747e595535433ef8f6a811d853cd943046624a0ec04662b17bbf33bf5")
+
+    def test_el_pedido_sin_pago_no_sale_en_el_panel_de_produccion(self):
+        self.ir_a_pagar()
+        crear_roles()
+        disenadora = User.objects.create_user("dise", password="x", is_staff=True)
+        disenadora.groups.add(Group.objects.get(name=GRUPO_DISENADORA))
+        self.client.force_login(disenadora)
+        self.assertNotContains(self.client.get(reverse("pedidos:panel")), "LR-0001")
+
+    # ----- Pago aprobado -----
+    def test_pago_aprobado(self):
+        r = self.responder_pasarela(self.ir_a_pagar(), "pagar")
+        pedido = Pedido.objects.get()
+        pago = pedido.pagos.get()
+        self.assertEqual(pedido.estado_pago, Pedido.EstadoPago.APROBADO)
+        self.assertEqual(pago.estado, Pago.Estado.APROBADO)
+        self.assertTrue(pago.transaccion_id)
+        self.assertRedirects(r, reverse("pedidos:confirmado", args=[pedido.pk]))
+        self.assertEqual(self.client.session["carrito"], {})
+        self.assertContains(self.client.get(r.url), "quedó aprobado")
+
+    # ----- CA 2: rechazado o cancelado -----
+    def test_ca2_pago_rechazado_vuelve_con_el_carrito_intacto(self):
+        r = self.responder_pasarela(self.ir_a_pagar(), "rechazar")
+        self.assertRedirects(r, reverse("pedidos:carrito"), fetch_redirect_response=False)
+        self.assertEqual(len(self.client.session["carrito"]), 1)
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.RECHAZADO)
+        self.assertEqual(Pago.objects.get().estado, Pago.Estado.RECHAZADO)
+        self.assertContains(self.client.get(r.url), "Tu carrito sigue igual")
+
+    def test_ca2_pago_cancelado_vuelve_con_el_carrito_intacto(self):
+        r = self.responder_pasarela(self.ir_a_pagar("bancolombia"), "cancelar")
+        self.assertRedirects(r, reverse("pedidos:carrito"))
+        self.assertEqual(len(self.client.session["carrito"]), 1)
+        self.assertEqual(Pago.objects.get().estado, Pago.Estado.CANCELADO)
+
+    def test_ca2_si_el_pago_falla_se_sueltan_la_pieza_unica_y_el_codigo(self):
+        unica = Producto.objects.create(nombre="Anillo Luna", categoria=self.categoria, precio=50000,
+                                        pieza_unica=True)
+        self.client.post(reverse("pedidos:agregar", args=[unica.pk]), {})
+        CodigoDescuento.objects.create(cliente=self.cliente, codigo="DIEZ", tipo="porcentaje", valor=10,
+                                       vence=timezone.localdate())
+        url = self.ir_a_pagar(codigo="DIEZ")
+        unica.refresh_from_db()
+        self.assertTrue(unica.vendida)  # apartada mientras paga
+        self.responder_pasarela(url, "rechazar")
+        unica.refresh_from_db()
+        self.assertFalse(unica.vendida)
+        self.assertIsNone(CodigoDescuento.objects.get().usado_en)
+        # Puede volver a intentarlo con el mismo carrito y el mismo código
+        self.responder_pasarela(self.ir_a_pagar("pse", codigo="DIEZ"), "pagar")
+        self.assertEqual(Pedido.objects.filter(estado_pago=Pedido.EstadoPago.APROBADO).count(), 1)
+
+    def test_ca2_un_pago_abandonado_no_bloquea_la_nueva_compra(self):
+        unica = Producto.objects.create(nombre="Anillo Luna", categoria=self.categoria, precio=50000,
+                                        pieza_unica=True)
+        self.client.post(reverse("pedidos:agregar", args=[unica.pk]), {})
+        self.ir_a_pagar()  # cierra la pasarela sin pagar
+        self.ir_a_pagar("pse")
+        self.assertEqual(Pedido.objects.filter(estado_pago=Pedido.EstadoPago.RECHAZADO).count(), 1)
+        self.assertEqual(Pedido.objects.filter(estado_pago=Pedido.EstadoPago.EN_PASARELA).count(), 1)
+
+    # ----- CA 3: solo la pasarela aprueba -----
+    def test_ca3_volver_a_la_tienda_no_aprueba_el_pago(self):
+        self.ir_a_pagar()
+        pago = Pago.objects.get()
+        pago.transaccion_id = "01-1700000000-12345"
+        pago.save()
+        r = self.client.get(reverse("pedidos:resultado_pago"), {"id": pago.transaccion_id})
+        self.assertContains(r, "Estamos confirmando tu pago")
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.EN_PASARELA)
+        self.assertEqual(len(self.client.session["carrito"]), 1)
+
+    def test_ca3_el_evento_con_firma_correcta_aprueba_el_pedido(self):
+        self.ir_a_pagar()
+        r = self.enviar_evento(self.evento(Pago.objects.get()))
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.APROBADO)
+
+    def test_ca3_un_evento_con_firma_falsa_no_cambia_nada(self):
+        self.ir_a_pagar()
+        evento = self.evento(Pago.objects.get())
+        evento["signature"]["checksum"] = "a" * 64
+        self.assertEqual(self.enviar_evento(evento).status_code, 400)
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.EN_PASARELA)
+
+    def test_ca3_un_evento_con_otro_monto_no_aprueba(self):
+        self.ir_a_pagar()
+        self.enviar_evento(self.evento(Pago.objects.get(), centavos=100))
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.EN_PASARELA)
+
+    def test_ca3_un_evento_de_pago_rechazado_no_aprueba(self):
+        self.ir_a_pagar()
+        self.enviar_evento(self.evento(Pago.objects.get(), estado="DECLINED"))
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.RECHAZADO)
+
+    # ----- CA 4: correo de confirmación -----
+    def test_ca4_correo_con_el_resumen_cuando_se_aprueba(self):
+        self.ir_a_pagar()
+        self.assertEqual(len(mail.outbox), 0)  # todavía no está pagado
+        evento = self.evento(Pago.objects.get())
+        self.enviar_evento(evento)
+        self.enviar_evento(evento)  # la pasarela puede repetir el aviso
+        self.assertEqual(len(mail.outbox), 1)
+        correo = mail.outbox[0]
+        self.assertEqual(correo.to, ["paula@correo.com"])
+        self.assertIn("LR-0001", correo.subject)
+        for texto in ("Collar Flores", "$68.000", "Nequi", "Calle 9 # 40-12"):
+            self.assertIn(texto, correo.body)
+        self.assertIn(reverse("pedidos:mi_pedido", args=[1]), correo.body)
+        self.assertEqual(correo.alternatives[0][1], "text/html")
+
+    def test_ca4_correo_al_confirmar_con_pago_contra_entrega(self):
+        self.comprar(metodo_pago="contra_entrega")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("Pago contra entrega", mail.outbox[0].body)
+
+    # ----- CA 5: contra entrega solo para entregas directas -----
+    def test_ca5_a_otra_ciudad_por_transportadora_no_hay_contra_entrega(self):
+        TiempoEnvio.objects.create(ciudad="Pereira", dias_min=2, dias_max=4, por_transportadora=True)
+        r = self.comprar(ciudad="Pereira", barrio="Centro", metodo_pago="contra_entrega")
+        self.assertEqual(r.status_code, 200)
+        self.assertContains(r, "no tienen pago contra entrega")
+        self.assertFalse(Pedido.objects.exists())
+        datos = self.client.get(reverse("pedidos:calcular_envio"), {"ciudad": "Pereira"}).json()  # carrito lleno
+        self.assertFalse(datos["contra_entrega"])
+
+    def test_ca5_a_otra_ciudad_si_se_puede_pagar_en_linea(self):
+        TarifaPeso.objects.create(peso_hasta=500, valor=12000)
+        self.ir_a_pagar("pse", ciudad="Pereira", barrio="Centro")
+        self.assertEqual(Pedido.objects.get().ciudad, "Pereira")
+
+    def test_ca5_en_cali_si_hay_contra_entrega(self):
+        self.agregar_al_carrito()
+        self.assertTrue(self.client.get(reverse("pedidos:calcular_envio"), {"ciudad": "Cali"}).json()["contra_entrega"])
+        self.comprar(metodo_pago="contra_entrega")
+        self.assertEqual(Pedido.objects.get().metodo_pago, "contra_entrega")
+
+    def test_ca5_ciudad_con_entrega_directa_si_tiene_contra_entrega(self):
+        TiempoEnvio.objects.create(ciudad="Jamundí", dias_min=1, dias_max=2, por_transportadora=False)
+        TarifaPeso.objects.create(peso_hasta=500, valor=8000)
+        self.comprar(ciudad="Jamundí", barrio="Centro", metodo_pago="contra_entrega")
+        self.assertEqual(Pedido.objects.get().metodo_pago, "contra_entrega")
+
+    # ----- Envío por confirmar y pedido al por mayor -----
+    def test_con_envio_por_confirmar_paga_en_linea_desde_su_pedido(self):
+        r = self.comprar(metodo_pago="nequi", barrio="San Antonio")  # Cali fuera de las zonas
+        pedido = Pedido.objects.get()
+        self.assertRedirects(r, reverse("pedidos:confirmado", args=[pedido.pk]))
+        self.assertFalse(Pago.objects.exists())
+        mi_pedido = reverse("pedidos:mi_pedido", args=[pedido.pk])
+        self.assertNotContains(self.client.get(mi_pedido), "Pagar $")
+        # La dueña confirma el envío y el cliente paga desde su pedido
+        pedido.costo_envio = Decimal("9000")
+        pedido.envio_costo_estado = Pedido.EstadoEnvioCosto.CONFIRMADO
+        pedido.calcular_total()
+        pedido.save()
+        self.assertContains(self.client.get(mi_pedido), "Pagar $77.000 con Nequi")
+        url = self.client.post(reverse("pedidos:pagar_en_linea", args=[pedido.pk])).url
+        self.responder_pasarela(url, "pagar")
+        self.assertEqual(Pedido.objects.get().estado_pago, Pedido.EstadoPago.APROBADO)
+
+    def test_el_pedido_al_por_mayor_tambien_se_paga_en_linea(self):
+        self.producto.precio_mayorista = Decimal("40000")
+        self.producto.save()
+        self.agregar_al_carrito()
+        self.client.post(reverse("pedidos:agregar_mayorista", args=[self.producto.pk]),
+                         {"talla": self.talla.pk, "cantidad": 5})
+        r = self.client.post(reverse("pedidos:pagar_mayorista"), datos_envio(metodo_pago="pse"))
+        self.responder_pasarela(r.url, "pagar")
+        self.assertEqual(self.client.session["carrito_mayorista"], {})
+        self.assertEqual(len(self.client.session["carrito"]), 1)  # el carrito al detal no se toca

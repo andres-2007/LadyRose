@@ -12,7 +12,7 @@ antes del despacho.
 from dataclasses import dataclass
 from decimal import Decimal
 
-from .models import BarrioZona, Pedido, TarifaPeso, normalizar_ciudad
+from .models import BarrioZona, Pedido, TarifaPeso, TiempoEnvio, normalizar_ciudad
 
 CIUDADES_CALI = {"cali", "santiago de cali"}
 
@@ -34,6 +34,24 @@ Estado = Pedido.EstadoEnvioCosto
 
 def es_cali(ciudad):
     return normalizar_ciudad(ciudad) in CIUDADES_CALI
+
+
+MENSAJE_SIN_CONTRA_ENTREGA = (
+    "Los pedidos a otras ciudades van por transportadora y no tienen pago contra entrega. "
+    "Paga con Nequi, PSE o Transferencia Bancolombia."
+)
+
+
+def permite_contra_entrega(ciudad):
+    """HU 12 CA 5: el pago contra entrega solo es para lo que entrega Ladyrose directamente.
+
+    Cali sí. Otra ciudad solo si en la tabla de tiempos de envío (HU 07) está marcada como
+    entrega directa (sin transportadora). Si todavía no hay ciudad, se deja la opción.
+    """
+    if not (ciudad or "").strip() or es_cali(ciudad):
+        return True
+    tiempo = TiempoEnvio.objects.filter(ciudad_normalizada=normalizar_ciudad(ciudad)).first()
+    return bool(tiempo and not tiempo.por_transportadora)
 
 
 def barrio_en_zona(barrio):

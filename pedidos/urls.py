@@ -24,6 +24,11 @@ urlpatterns = [
     path("pagar/codigo/", views.aplicar_codigo, name="aplicar_codigo"),
     path("pagar/envio/", views.calcular_envio_vista, name="calcular_envio"),
     path("pedido/<int:pk>/confirmado/", views.confirmado, name="confirmado"),
+    # HU 12: pago en línea con la pasarela (Nequi, PSE y Transferencia Bancolombia)
+    path("pedido/<int:pk>/pagar/", views.pagar_en_linea, name="pagar_en_linea"),
+    path("pagos/resultado/", views.resultado_pago, name="resultado_pago"),
+    path("pagos/pasarela/", views.pasarela_pago, name="pasarela"),
+    path("pagos/eventos/", views.eventos_pasarela, name="eventos_pasarela"),  # webhook
     path("pedido/<int:pk>/", views.mi_pedido, name="mi_pedido"),
     # Panel de producción
     path("panel/pedidos/", views.panel, name="panel"),

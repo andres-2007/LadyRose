@@ -3,7 +3,7 @@ from django.core.exceptions import ValidationError
 
 from clientes.models import CodigoDescuento, CodigoInvalido
 
-from .envios import calcular_envio
+from .envios import MENSAJE_SIN_CONTRA_ENTREGA, calcular_envio, permite_contra_entrega
 from .models import MAX_NOTA, BarrioZona, Pedido, TipoEmpaque
 
 OTRO_BARRIO = "otro"
@@ -134,6 +134,10 @@ class PedidoForm(forms.ModelForm):
         # HU 30: costo del envío según la zona o el peso
         if datos.get("ciudad"):
             self.envio = calcular_envio(self.items, datos["ciudad"], datos.get("barrio", ""))
+        # HU 12 CA 5: a otras ciudades por transportadora no hay pago contra entrega
+        if (datos.get("metodo_pago") == Pedido.MetodoPago.CONTRA_ENTREGA
+                and not permite_contra_entrega(datos.get("ciudad", ""))):
+            self.add_error("metodo_pago", MENSAJE_SIN_CONTRA_ENTREGA)
         # HU 24 CA 3: si paga antes por transferencia, adjunta el comprobante.
         # HU 30: si el envío está por confirmar, transfiere después, cuando se le confirme el valor.
         por_confirmar = self.envio is not None and self.envio.por_confirmar

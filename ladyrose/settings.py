@@ -153,7 +153,18 @@ LADYROSE = {
         "Nequi o Bancolombia a nombre de Ladyrose. Escríbenos por WhatsApp y te enviamos el número de cuenta.",
     ),
     "CORREO": os.environ.get("LADYROSE_CORREO", "ladyrose@gmail.com"),
+    # HU 12: pasarela de pagos en línea (Nequi, PSE y Transferencia Bancolombia).
+    # Escogimos Wompi; por ahora se usa la pasarela de pruebas del proyecto (ver pedidos/pasarela.py).
+    "PASARELA": {
+        "NOMBRE": os.environ.get("PASARELA_NOMBRE", "Wompi (pruebas)"),
+        "LLAVE_PUBLICA": os.environ.get("PASARELA_LLAVE_PUBLICA", "pub_test_ladyrose"),
+        "SECRETO_INTEGRIDAD": os.environ.get("PASARELA_SECRETO_INTEGRIDAD", "test_integrity_ladyrose"),
+        "SECRETO_EVENTOS": os.environ.get("PASARELA_SECRETO_EVENTOS", "test_events_ladyrose"),
+    },
     "CIUDAD": os.environ.get("LADYROSE_CIUDAD", "Cali, Colombia"),
+    # HU 12: dirección de la página, para los enlaces de los correos que salen sin una visita
+    # (por ejemplo, cuando la pasarela confirma un pago)
+    "URL_SITIO": os.environ.get("LADYROSE_URL_SITIO", "http://127.0.0.1:8000"),
 }
 
 # Correos (HU 10 y HU 26). En desarrollo se muestran en la terminal en vez de enviarse.
