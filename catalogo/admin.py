@@ -56,7 +56,7 @@ class ColeccionAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ("miniatura", "nombre", "categoria", "precio", "precio_oferta", "en_oferta_hoy",
+    list_display = ("miniatura", "nombre", "categoria", "precio", "precio_mayorista", "precio_oferta", "en_oferta_hoy",
                     "pieza_unica", "vendida", "visible")
     list_display_links = ("miniatura", "nombre")
     list_filter = ("categoria", "colecciones", "visible", "pieza_unica", "vendida")
@@ -65,7 +65,7 @@ class ProductoAdmin(admin.ModelAdmin):
     search_fields = ("nombre", "descripcion")
     inlines = [FotoProductoInline, TallaProductoInline]
     fieldsets = (
-        (None, {"fields": ("nombre", "categoria", "colecciones", "descripcion", "precio", "visible")}),
+        (None, {"fields": ("nombre", "categoria", "colecciones", "descripcion", ("precio", "precio_mayorista"), "visible")}),
         ("Fabricación", {"fields": ("material", "colores", "tecnica", ("dias_fabricacion_min", "dias_elaboracion"), "peso"),
                          "description": "El tiempo de fabricación se muestra en la ficha del producto y se suma al "
                                         "tiempo de envío para calcular cuándo recibe el cliente (HU 07)."}),
