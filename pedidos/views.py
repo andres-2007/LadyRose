@@ -19,6 +19,7 @@ from clientes.views import URL_INGRESAR
 from core.templatetags.ladyrose import pesos
 
 from . import pagos, pasarela
+from .avisos import enviar_confirmacion
 from .carrito import Carrito, CarritoMayorista, ErrorCarrito
 from .entregas import estimar_entrega, tiempos_fabricacion
 from .envios import (MENSAJE_SIN_CONTRA_ENTREGA, MENSAJE_TRANSFERENCIA_POR_CONFIRMAR, calcular_envio,
@@ -206,6 +207,8 @@ def _pagar(request, c):
             # El carrito se vacía solo cuando el pago queda aprobado.
             if pedido.estado_pago == Pedido.EstadoPago.EN_PASARELA:
                 return redirect(pagos.url_pago(request, pagos.crear_pago(pedido)))
+            # HU 12 CA 4: correo con el resumen (contra entrega, transferencia o envío por confirmar)
+            enviar_confirmacion(pedido, request)
             c.vaciar()
             _marcar_confirmado(request, pedido)
             return redirect("pedidos:confirmado", pk=pedido.pk)

@@ -9,6 +9,7 @@ from django.db import transaction
 from django.urls import reverse
 
 from . import pasarela
+from .avisos import enviar_confirmacion
 from .models import Pago, Pedido
 
 # Estado del pago en la tienda según el estado de la transacción en la pasarela
@@ -65,6 +66,7 @@ def registrar_transaccion(datos):
     datos: la transacción como la manda la pasarela (id, reference, status, amount_in_cents...).
     Devuelve el pago, o None si la referencia no existe o el monto no coincide.
     """
+    aprobado_ahora = False
     with transaction.atomic():
         pago = (Pago.objects.select_for_update().select_related("pedido")
                 .filter(referencia=datos.get("reference")).first())
@@ -81,10 +83,14 @@ def registrar_transaccion(datos):
         if estado == Pago.Estado.APROBADO:
             pedido.estado_pago = Pedido.EstadoPago.APROBADO
             pedido.save(update_fields=["estado_pago"])
+            aprobado_ahora = True
         else:
             pedido.estado_pago = Pedido.EstadoPago.RECHAZADO
             pedido.save(update_fields=["estado_pago"])
             liberar_reservas(pedido)
+    # CA 4: correo con el resumen de la compra cuando el pago queda aprobado (una sola vez)
+    if aprobado_ahora:
+        enviar_confirmacion(pago.pedido)
     return pago
 
 

@@ -669,6 +669,7 @@ class HU30ConfirmarEnvioTests(HU30EnvioBase):
         super().setUp()
         self.comprar(barrio_lista="otro", barrio="San Antonio", metodo_pago="transferencia")
         self.pedido = Pedido.objects.get()
+        mail.outbox.clear()  # HU 12: al comprar ya salió el correo de confirmación; aquí se revisa solo el aviso
         self.comprador = self.cliente.usuario
         crear_roles()
         self.duena = User.objects.create_user("duena", password="x", is_staff=True)

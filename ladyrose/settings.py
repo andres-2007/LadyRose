@@ -162,6 +162,9 @@ LADYROSE = {
         "SECRETO_EVENTOS": os.environ.get("PASARELA_SECRETO_EVENTOS", "test_events_ladyrose"),
     },
     "CIUDAD": os.environ.get("LADYROSE_CIUDAD", "Cali, Colombia"),
+    # HU 12: dirección de la página, para los enlaces de los correos que salen sin una visita
+    # (por ejemplo, cuando la pasarela confirma un pago)
+    "URL_SITIO": os.environ.get("LADYROSE_URL_SITIO", "http://127.0.0.1:8000"),
 }
 
 # Correos (HU 10 y HU 26). En desarrollo se muestran en la terminal en vez de enviarse.

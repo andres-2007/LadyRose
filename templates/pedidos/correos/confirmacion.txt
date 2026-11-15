@@ -1,0 +1,23 @@
+{% load ladyrose %}{% autoescape off %}¡Hola {{ pedido.nombre|primer_nombre }}!
+
+{% if pedido.pago_aprobado %}Tu pago con {{ pedido.get_metodo_pago_display }} quedó aprobado y tu pedido {{ pedido.numero }} ya está en la lista de la diseñadora.{% else %}Recibimos tu pedido {{ pedido.numero }} y ya está en la lista de la diseñadora.{% endif %}
+
+RESUMEN DE TU COMPRA
+{% for d in pedido.detalles.all %}- {{ d.referencia }}{% if d.talla %} · {{ d.talla }}{% endif %}{% if d.color %} · {{ d.color }}{% endif %} × {{ d.cantidad }}: {{ d.subtotal|pesos }}
+{% endfor %}
+Productos: {{ pedido.subtotal|pesos }}{% if pedido.descuento %}
+Descuento: - {{ pedido.descuento|pesos }}{% endif %}{% if pedido.empaque %}
+{{ pedido.empaque.nombre }}: {{ pedido.costo_empaque|pesos }}{% endif %}
+Envío: {% if pedido.envio_por_confirmar %}por confirmar{% elif pedido.costo_envio == 0 %}gratis{% elif pedido.costo_envio is not None %}{{ pedido.costo_envio|pesos }}{% else %}—{% endif %}
+Total{% if pedido.envio_por_confirmar %} sin envío{% endif %}: {{ pedido.total|pesos }}
+
+Forma de pago: {{ pedido.get_metodo_pago_display }} ({{ pedido.get_estado_pago_display|lower }})
+Recibe: {{ pedido.nombre_recibe }} · {{ pedido.telefono_recibe }}
+Dirección: {{ pedido.direccion }}, {{ pedido.barrio }}, {{ pedido.ciudad }}
+{% if pedido.envio_por_confirmar %}
+Te avisamos el valor del envío antes de despacharlo.{% endif %}
+Puedes ver tu pedido aquí: {{ url_pedido }}
+
+Con cariño,
+Ladyrose
+{% endautoescape %}
