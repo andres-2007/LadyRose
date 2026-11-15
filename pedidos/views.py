@@ -1,3 +1,4 @@
+import json
 from urllib.parse import quote
 
 from django.conf import settings
@@ -9,6 +10,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 
 from catalogo.models import Producto, TallaProducto, texto_dias_habiles
@@ -382,6 +384,23 @@ def resultado_pago(request):
     return redirect("pedidos:carrito_mayorista" if pedido.es_mayorista else "pedidos:carrito")
 
 
+@csrf_exempt
+@require_POST
+def eventos_pasarela(request):
+    """HU 12 CA 3: webhook de la pasarela. Solo un evento con la firma correcta aprueba el pago.
+
+    La pasarela espera un 200; con otra respuesta vuelve a intentar más tarde.
+    """
+    try:
+        evento = json.loads(request.body.decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"ok": False, "error": "JSON inválido"}, status=400)
+    if not isinstance(evento, dict) or not pasarela.evento_valido(evento):
+        return JsonResponse({"ok": False, "error": "Firma inválida"}, status=400)
+    pago = pagos.procesar_evento(evento)
+    return JsonResponse({"ok": True, "referencia": pago.referencia if pago else None})
+
+
 def _pago_desde_pasarela(request):
     """Revisa que el enlace de pago no se haya cambiado (firma de integridad)."""
     datos = request.GET if request.method == "GET" else request.POST
@@ -405,11 +424,15 @@ def pasarela_pago(request):
             "cancelar": pasarela.EstadoTransaccion.ANULADA,
         }.get(request.POST.get("accion"))
         if estado:
-            pagos.registrar_transaccion({
+            # La pasarela le avisa a la tienda con un evento firmado, como el webhook de Wompi.
+            # (Con Wompi real, este evento llega por internet a /pagos/eventos/.)
+            evento = pasarela.crear_evento({
                 "id": pasarela.nuevo_id_transaccion(), "reference": pago.referencia,
                 "amount_in_cents": pasarela.en_centavos(pago.monto), "status": estado,
                 "payment_method_type": pasarela.TIPO_METODO.get(pago.metodo, ""),
+                "customer_email": pago.pedido.correo, "currency": pasarela.MONEDA,
             })
+            pagos.procesar_evento(evento)
             pago.refresh_from_db()
     if pago.terminado:
         # Siempre se vuelve a la página de resultado de la tienda (no a otra que venga en el enlace)

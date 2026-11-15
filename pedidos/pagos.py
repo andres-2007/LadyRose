@@ -44,6 +44,21 @@ def url_pago(request, pago):
     return reverse("pedidos:pasarela") + "?" + urlencode(parametros)
 
 
+def procesar_evento(evento):
+    """Aviso (webhook) de la pasarela con el resultado de una transacción.
+
+    CA 3: el pedido pasa a "Pago aprobado" solo por aquí, cuando el evento trae la
+    firma correcta de la pasarela. La página a la que vuelve el cliente no puede
+    aprobar nada: solo muestra lo que la pasarela ya confirmó.
+    Devuelve el pago actualizado, o None si el evento no es válido.
+    """
+    if not pasarela.evento_valido(evento):
+        return None
+    if evento.get("event") != "transaction.updated":
+        return None
+    return registrar_transaccion(evento["data"]["transaction"])
+
+
 def registrar_transaccion(datos):
     """Guarda la respuesta de la pasarela para el pago con esa referencia.
 
