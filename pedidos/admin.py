@@ -4,12 +4,12 @@ from django.contrib import admin, messages
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import path, reverse
 from django.utils import timezone
-from django.utils.html import format_html
+from django.utils.html import format_html, format_html_join
 
 from core.templatetags.ladyrose import pesos
 
 from .avisos import avisar_envio_por_correo, mensaje_envio
-from .models import BarrioZona, DetallePedido, Pedido, TarifaPeso, TiempoEnvio, TipoEmpaque, ZonaEnvio
+from .models import BarrioZona, DetallePedido, Pago, Pedido, TarifaPeso, TiempoEnvio, TipoEmpaque, ZonaEnvio
 
 
 # ----------------------------------------------------------------------
@@ -88,6 +88,21 @@ class DetallePedidoInline(admin.TabularInline):
         return ()
 
 
+@admin.register(Pago)
+class PagoAdmin(admin.ModelAdmin):
+    list_display = ("referencia", "pedido", "metodo", "estado", "monto", "transaccion_id", "creado")
+    list_filter = ("estado", "metodo")
+    search_fields = ("referencia", "transaccion_id", "pedido__nombre")
+    readonly_fields = ("pedido", "metodo", "estado", "referencia", "transaccion_id", "monto", "detalle",
+                       "creado", "actualizado")
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
     """HU 24 CA 5: envío, productos y pago en una sola vista."""
@@ -100,7 +115,7 @@ class PedidoAdmin(admin.ModelAdmin):
     list_editable = ("estado_envio",)
     date_hierarchy = "creado"
     inlines = [DetallePedidoInline]
-    readonly_fields = ("numero_pedido", "creado", "tipo", "ver_comprobante", "abrir_en_panel", "nota_destacada",
+    readonly_fields = ("numero_pedido", "creado", "tipo", "pagos_en_linea", "ver_comprobante", "abrir_en_panel", "nota_destacada",
                        "subtotal", "costo_empaque", "total", "canal_origen", "estado_actualizado",
                        "cliente", "codigo_descuento", "descuento",
                        "envio_costo_estado", "envio_detalle", "peso_total", "envio_avisado_en", "avisar_envio")
@@ -113,7 +128,7 @@ class PedidoAdmin(admin.ModelAdmin):
         ("Costo del envío", {"fields": ("envio_costo_estado", "envio_detalle", "peso_total", "costo_envio",
                                         "envio_avisado_en", "avisar_envio")}),
         ("Regalo", {"fields": ("empaque", "nota_destacada", "nota", "motivo")}),
-        ("Pago", {"fields": ("metodo_pago", "comprobante", "ver_comprobante", "estado_pago",
+        ("Pago", {"fields": ("metodo_pago", "comprobante", "ver_comprobante", "estado_pago", "pagos_en_linea",
                              "subtotal", "codigo_descuento", "descuento", "costo_empaque", "total")}),
         ("Producción", {"fields": ("cotizacion", "tecnica", "dias_elaboracion", "fecha_limite",
                                    "estado_produccion", "estado_actualizado", "canal_origen")}),
@@ -128,6 +143,18 @@ class PedidoAdmin(admin.ModelAdmin):
         if not request.user.has_perm("pedidos.change_zonaenvio"):
             campos.append("costo_envio")
         return campos
+
+    @admin.display(description="Pagos en línea")
+    def pagos_en_linea(self, obj):
+        """HU 12: intentos de pago por la pasarela (Nequi, PSE o Transferencia Bancolombia)."""
+        pagos = list(obj.pagos.all()) if obj.pk else []
+        if not pagos:
+            return "—"
+        return format_html_join(
+            "", "<div>{} · {} · {} · {}{}</div>",
+            ((p.referencia, p.get_metodo_display(), p.get_estado_display(), pesos(p.monto),
+              f" · transacción {p.transaccion_id}" if p.transaccion_id else "") for p in pagos),
+        )
 
     @admin.display(description="Envío")
     def envio_lista(self, obj):

@@ -172,12 +172,20 @@ class Pedido(models.Model):
         ENTREGADO = "entregado", "Entregado"
 
     class MetodoPago(models.TextChoices):
+        # HU 12: pagos en línea por la pasarela
+        NEQUI = "nequi", "Nequi"
+        PSE = "pse", "PSE"
+        BANCOLOMBIA = "bancolombia", "Transferencia Bancolombia"
         CONTRA_ENTREGA = "contra_entrega", "Pago contra entrega"
         TRANSFERENCIA = "transferencia", "Transferencia antes del envío"
 
     class EstadoPago(models.TextChoices):
         PENDIENTE = "pendiente", "Por verificar"
         VERIFICADO = "verificado", "Verificado"
+        # HU 12: pagos en línea
+        EN_PASARELA = "en_pasarela", "Esperando el pago en línea"
+        APROBADO = "aprobado", "Pago aprobado"
+        RECHAZADO = "rechazado", "Pago no completado"
 
     creado = models.DateTimeField("Fecha del pedido", default=timezone.now)
     # HU 14: los pedidos del módulo mayorista se separan de los pedidos al detal
@@ -269,6 +277,17 @@ class Pedido(models.Model):
 
     def __str__(self):
         return f"Pedido {self.numero}"
+
+    # ----- HU 12 -----
+    METODOS_EN_LINEA = (MetodoPago.NEQUI, MetodoPago.PSE, MetodoPago.BANCOLOMBIA)
+
+    @property
+    def pago_en_linea(self):
+        return self.metodo_pago in self.METODOS_EN_LINEA
+
+    @property
+    def pago_aprobado(self):
+        return self.estado_pago == self.EstadoPago.APROBADO
 
     @property
     def es_mayorista(self):
@@ -393,3 +412,41 @@ class DetallePedido(models.Model):
     @property
     def subtotal(self):
         return self.precio_unitario * self.cantidad
+
+
+class Pago(models.Model):
+    """HU 12: cada intento de pago en línea de un pedido (Nequi, PSE o Transferencia Bancolombia).
+
+    El pedido solo pasa a "Pago aprobado" cuando la pasarela confirma la transacción.
+    """
+
+    class Estado(models.TextChoices):
+        PENDIENTE = "pendiente", "Pendiente"
+        APROBADO = "aprobado", "Aprobado"
+        RECHAZADO = "rechazado", "Rechazado"
+        CANCELADO = "cancelado", "Cancelado por el cliente"
+        ERROR = "error", "Error en la pasarela"
+
+    pedido = models.ForeignKey(Pedido, on_delete=models.CASCADE, related_name="pagos", verbose_name="Pedido")
+    metodo = models.CharField("Método", max_length=20, choices=Pedido.MetodoPago.choices)
+    estado = models.CharField("Estado", max_length=20, choices=Estado.choices, default=Estado.PENDIENTE)
+    referencia = models.CharField("Referencia", max_length=40, unique=True,
+                                  help_text="Referencia con la que la tienda le envía el pago a la pasarela.")
+    transaccion_id = models.CharField("Id de la transacción", max_length=60, blank=True, db_index=True,
+                                      help_text="Número que devuelve la pasarela.")
+    monto = models.DecimalField("Monto", max_digits=12, decimal_places=0)
+    detalle = models.CharField("Respuesta de la pasarela", max_length=200, blank=True)
+    creado = models.DateTimeField("Creado", default=timezone.now)
+    actualizado = models.DateTimeField("Última actualización", auto_now=True)
+
+    class Meta:
+        ordering = ["-creado"]
+        verbose_name = "pago en línea"
+        verbose_name_plural = "pagos en línea"
+
+    def __str__(self):
+        return f"{self.referencia} ({self.get_estado_display()})"
+
+    @property
+    def terminado(self):
+        return self.estado != self.Estado.PENDIENTE
