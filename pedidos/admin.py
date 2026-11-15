@@ -88,6 +88,26 @@ class DetallePedidoInline(admin.TabularInline):
         return ()
 
 
+class DespachoFilter(admin.SimpleListFilter):
+    """HU 22: los pedidos que cuenta la tarjeta "Pedidos por despachar" del panel principal."""
+
+    title = "despacho"
+    parameter_name = "despacho"
+
+    def lookups(self, request, model_admin):
+        return [("pendientes", "Por despachar"), ("listos", "Terminados, listos para enviar")]
+
+    def queryset(self, request, queryset):
+        from core.resumen import pedidos_por_despachar
+
+        if self.value() == "pendientes":
+            return queryset.filter(pk__in=pedidos_por_despachar().values("pk"))
+        if self.value() == "listos":
+            listos = pedidos_por_despachar().filter(estado_produccion=Pedido.EstadoProduccion.TERMINADO)
+            return queryset.filter(pk__in=listos.values("pk"))
+        return queryset
+
+
 @admin.register(Pago)
 class PagoAdmin(admin.ModelAdmin):
     list_display = ("referencia", "pedido", "metodo", "estado", "monto", "transaccion_id", "creado")
@@ -109,7 +129,7 @@ class PedidoAdmin(admin.ModelAdmin):
 
     list_display = ("numero_pedido", "creado", "tipo", "nombre", "ciudad", "total_pesos", "envio_lista", "metodo_pago",
                     "estado_pago", "estado_produccion", "estado_envio", "regalo")
-    list_filter = ("tipo", "envio_costo_estado", "estado_produccion", "estado_envio", "estado_pago", "metodo_pago",
+    list_filter = (DespachoFilter, "tipo", "envio_costo_estado", "estado_produccion", "estado_envio", "estado_pago", "metodo_pago",
                    "canal_origen")
     search_fields = ("id", "nombre", "telefono", "correo", "nombre_recibe", "direccion")
     list_editable = ("estado_envio",)

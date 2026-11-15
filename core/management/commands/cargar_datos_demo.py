@@ -303,9 +303,13 @@ class Command(BaseCommand):
         self._clientes()
 
         if not VisitaOrigen.objects.exists():
-            for canal, n in [("instagram", 14), ("whatsapp", 8), ("tiktok", 6), ("directo", 9)]:
-                for _ in range(n):
-                    VisitaOrigen.objects.create(canal=canal, pagina="/")
+            # HU 22: visitas repartidas en los últimos días para ver las tarjetas del panel principal
+            ahora = timezone.now()
+            for canal, n in [("instagram", 14), ("whatsapp", 8), ("tiktok", 6), ("directo", 9), ("facebook", 4)]:
+                for i in range(n):
+                    visita = VisitaOrigen.objects.create(canal=canal, pagina="/")
+                    if i % 3:  # una de cada tres queda de hoy
+                        VisitaOrigen.objects.filter(pk=visita.pk).update(fecha=ahora - timedelta(days=i % 9 + 1))
 
         self.stdout.write(self.style.SUCCESS("Datos de Ladyrose cargados."))
 

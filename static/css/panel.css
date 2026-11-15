@@ -63,3 +63,25 @@ h1, #content h1 { font-family: "Cormorant Garamond", Georgia, serif; font-weight
 #result_list tr.lr-fila-atrasada td:first-child { box-shadow: inset 4px 0 0 #e0457b; }
 .lr-boton-wa { white-space: nowrap; }
 .lr-resumen a.lr-resumen--alerta { border-color: #e0457b; color: #c9336a; }
+/* HU 22: panel principal de la dueña */
+.lr-tablero { margin: 0 0 28px; }
+.lr-tablero__cabecera { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.lr-tablero__cabecera h2 { margin: 0; font-family: "Cormorant Garamond", Georgia, serif; font-size: 1.6rem; font-weight: 500; color: #5a1a24; }
+.lr-tablero__cabecera span { color: #745b62; font-size: .8rem; }
+.lr-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+.lr-tarjeta { display: flex; flex-direction: column; gap: 4px; background: #fff; border: 1px solid #f0d3db; border-radius: 12px; padding: 16px 18px; color: #3a2a2e; text-decoration: none; }
+.lr-tarjeta__titulo { font-size: .72rem; letter-spacing: .12em; text-transform: uppercase; color: #745b62; }
+.lr-tarjeta__numero { font-family: "Cormorant Garamond", Georgia, serif; font-size: 2.6rem; font-weight: 500; line-height: 1.05; color: #5a1a24; }
+.lr-tarjeta__detalle { font-size: .85rem; color: #745b62; }
+.lr-tarjeta--alerta { border-color: #e0457b; box-shadow: inset 4px 0 0 #e0457b; }
+.lr-tarjeta--alerta .lr-tarjeta__detalle { color: #c9336a; font-weight: 600; }
+.lr-canales { list-style: none; margin: 6px 0 0; padding: 0; }
+.lr-canales li { list-style: none; display: flex; justify-content: space-between; gap: 10px; padding: 4px 0; border-top: 1px dashed #f0d3db; font-size: .85rem; }
+.lr-canales li span:last-child { font-weight: 600; color: #5a1a24; }
+a.lr-tarjeta:hover, .lr-tarjeta--visitas:hover { border-color: #c9336a; }
+a.lr-tarjeta, a.lr-tarjeta:link, a.lr-tarjeta:visited { color: #3a2a2e; }
+.lr-tarjeta__ver { margin-top: auto; padding-top: 8px; font-size: .78rem; font-weight: 600; color: #a8275a; }
+.lr-tarjeta__ver::after { content: " →"; }
+.lr-tarjeta__enlace, .lr-tarjeta__enlace:link, .lr-tarjeta__enlace:visited { display: flex; flex-direction: column; gap: 4px; color: inherit; text-decoration: none; }
+.lr-canales li a, .lr-canales li a:link, .lr-canales li a:visited { display: flex; justify-content: space-between; gap: 10px; width: 100%; color: inherit; text-decoration: none; }
+.lr-canales li a:hover span:first-child { color: #c9336a; text-decoration: underline; }
